@@ -1,0 +1,8 @@
+*.pyc
+*/__pycache__/
+*/migrations/*
+*/notification/
+.git/
+.idea/
+media
+BMS/setting.py
