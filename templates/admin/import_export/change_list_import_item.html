@@ -1,0 +1,7 @@
+{% load i18n %}
+{% load admin_urls %}
+
+{% if has_import_permission %}
+<li><a href='{% url opts|admin_urlname:"import" %}' class="import_link">{% trans "Import" %}</a></li>
+<!--<li><a href=' {{ MEDIA_URL }}uploads/importTemplates/ScfasIndexes.xlsx' class="import_link" download="下载">{% trans "导入模板下载" %}</a></li>-->
+{% endif %}

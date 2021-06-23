@@ -1,0 +1,13 @@
+*.pyc
+*/__pycache__/
+*/migrations/*
+!*/migrations/__init__.py
+.git/
+
+SMS/settings.py
+generated_doc.docx
+海路菌群活性检测分析尊享版12.15.docx
+requirements.txt
+
+.idea/
+media/
