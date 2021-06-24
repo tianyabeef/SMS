@@ -381,7 +381,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                   genus = gs_temp_id )
                             tmp = serializers.serialize( 'json' , queryset = quenstion )
                             quenstion_data = json.loads( tmp ) [0] ['fields']
-                            for i in ["is_status" , "sample_number" , "carbon_source" , "genus" , "genus_zh" ,
+                            for i in ["is_status" ,  "carbon_source" , "genus" , "genus_zh" ,
                                       "carbon_source_zh"]:
                                 del quenstion_data [i]
                             data [key_tmp].update( quenstion_data )
@@ -392,7 +392,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                              genus = gs_temp_id )
                             tmp = serializers.serialize( 'json' , queryset = conventional )
                             conventional_data = json.loads( tmp ) [0] ['fields']
-                            for i in ["is_status" , "sample_number" , "carbon_source" , "genus" , "genus_zh" ,
+                            for i in ["is_status" , "carbon_source" , "genus" , "genus_zh" ,
                                       "carbon_source_zh"]:
                                 del conventional_data [i]
                             data [key_tmp].update( conventional_data )
@@ -402,7 +402,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                      genus = gs_temp_id )
                             tmp = serializers.serialize( 'json' , queryset = bio )
                             bio_data = json.loads( tmp ) [0] ['fields']
-                            for i in ["is_status" , "sample_number" , "carbon_source" , "genus" , "genus_zh" ,
+                            for i in ["is_status" , "carbon_source" , "genus" , "genus_zh" ,
                                       "carbon_source_zh"]:
                                 del bio_data [i]
                             data [key_tmp].update( bio_data )
@@ -412,7 +412,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                genus = gs_temp_id )
                             tmp = serializers.serialize( 'json' , queryset = qpcr )
                             qpcr_data = json.loads( tmp ) [0] ['fields']
-                            for i in ["is_status" , "sample_number" , "carbon_source" , "genus" , "genus_zh" ,
+                            for i in ["is_status" , "carbon_source" , "genus" , "genus_zh" ,
                                       "carbon_source_zh","formula_number"]:
                                 del qpcr_data [i]
                             data [key_tmp].update( qpcr_data )
@@ -422,7 +422,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                  genus = gs_temp_id )
                             tmp = serializers.serialize( 'json' , queryset = scfas )
                             scfas_data = json.loads( tmp ) [0] ['fields']
-                            for i in ["is_status" , "sample_number" , "carbon_source" , "genus" , "genus_zh" ,
+                            for i in ["is_status"  , "carbon_source" , "genus" , "genus_zh" ,
                                       "carbon_source_zh"]:
                                 del scfas_data [i]
                             data [key_tmp].update( scfas_data )
@@ -432,7 +432,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                              genus = gs_temp_id )
                             tmp = serializers.serialize( 'json' , queryset = degradation )
                             degradation_data = json.loads( tmp ) [0] ['fields']
-                            for i in ["is_status" , "sample_number" , "carbon_source" , "genus" , "genus_zh" ,
+                            for i in ["is_status" , "carbon_source" , "genus" , "genus_zh" ,
                                       "carbon_source_zh"]:
                                 del degradation_data [i]
                             data [key_tmp].update( degradation_data )
