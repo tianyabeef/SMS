@@ -23,6 +23,7 @@ from django import forms
 import re
 from basicdata.models import CheckItem
 import jinja2
+from docxtpl import DocxTemplate , RichText
 
 admin.site.empty_value_display = '-empty-'
 
@@ -334,10 +335,17 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             2: '↓' ,
         }
         if value is not None:
-            value = STATUS_CHOICES.get( value )
+            if value == 0:
+                rt = RichText( )
+                rt.add('↑', color = '#DF0101' )
+            if value == 1:
+                rt = "-"
+            if value == 2:
+                rt = RichText( )
+                rt.add('↓', color = '#ff00ff' )
         else:
-            value = "缺失"
-        return value
+            rt = "缺失"
+        return rt
 
     def make_published(self , request , queryset):
         i = 0  # 提交成功的数据
@@ -346,7 +354,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         for obj in queryset:
             t += 1
             if obj.is_status < 1:
-                # obj.is_status = 1
+                obj.is_status = 1
                 obj_progress , created = Reports.objects.get_or_create( sample_number = obj.sample_number )
                 sample = Sample.objects.filter( sample_number = obj.sample_number ) [0]
                 filename , suffix = os.path.splitext( sample.report_template_url )
@@ -381,7 +389,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                   genus = gs_temp_id )
                             tmp = serializers.serialize( 'json' , queryset = quenstion )
                             quenstion_data = json.loads( tmp ) [0] ['fields']
-                            for i in ["is_status" ,  "carbon_source" , "genus" , "genus_zh" ,
+                            for i in ["is_status" , "carbon_source" , "genus" , "genus_zh" ,
                                       "carbon_source_zh"]:
                                 del quenstion_data [i]
                             data [key_tmp].update( quenstion_data )
@@ -413,7 +421,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                             tmp = serializers.serialize( 'json' , queryset = qpcr )
                             qpcr_data = json.loads( tmp ) [0] ['fields']
                             for i in ["is_status" , "carbon_source" , "genus" , "genus_zh" ,
-                                      "carbon_source_zh","formula_number"]:
+                                      "carbon_source_zh" , "formula_number"]:
                                 del qpcr_data [i]
                             data [key_tmp].update( qpcr_data )
                         if check_item.type.number == "JCDL0005":  # SCFAs检测项
@@ -422,7 +430,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                  genus = gs_temp_id )
                             tmp = serializers.serialize( 'json' , queryset = scfas )
                             scfas_data = json.loads( tmp ) [0] ['fields']
-                            for i in ["is_status"  , "carbon_source" , "genus" , "genus_zh" ,
+                            for i in ["is_status" , "carbon_source" , "genus" , "genus_zh" ,
                                       "carbon_source_zh"]:
                                 del scfas_data [i]
                             data [key_tmp].update( scfas_data )
@@ -445,8 +453,8 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 # qpcr_indexes = QpcrIndexes.objects.filter(sample_number = obj.sample_number,carbon_source = obj,genus = obj)
                 # degradation_indexes = DegradationIndexes.objects.filter(sample_number = obj.sample_number,carbon_source = obj)
                 # context = {'company_name': str( checks.count( ) ) + "202年↑↑↑↑10月"}
-                data [key_tmp].update( {'receive_sample_date': str( datetime.date.today( ) )} )
-                data [key_tmp].update( {'report_testing_date': str( datetime.date.today( ) )} )
+                data.update( {'receive_sample_date': str( datetime.date.today( ) )} )
+                data.update( {'report_testing_date': str( datetime.date.today( ) )} )
                 jinja_env = jinja2.Environment( )
                 jinja_env.filters ["tran"] = tran_format
                 jinja_env.filters ["pos"] = self.pos_value_display
