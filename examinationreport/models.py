@@ -2,7 +2,7 @@ from django.db import models
 from examinationsample.models import Sample
 from django.utils.html import format_html
 from django.contrib.auth.models import User
-
+from django.core.validators import MinValueValidator , MaxValueValidator
 
 # Create your models here.
 class Reports( models.Model ):
@@ -16,6 +16,8 @@ class Reports( models.Model ):
                                     null = True , blank = True )
     pdf_report = models.FileField( verbose_name = 'pdf报告' , upload_to = "uploads/examinationsample/%Y/%m" ,
                                    null = True , blank = True )
+    point = models.IntegerField( verbose_name = '小数点位数' , default = 2 , null = True , blank = True ,
+                                 validators = [MinValueValidator( 0 ) , MaxValueValidator( 100 )] ) # 报告中的小数点位数控制
     report_testing_date = models.DateField( verbose_name = "报告时间" , null = True , blank = True )
     report_user = models.CharField( verbose_name = "出具人" , max_length = 255 , blank = True , null = True )
 

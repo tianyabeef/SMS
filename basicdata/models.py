@@ -2,6 +2,7 @@ from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 from django.contrib.auth.models import User
 from django.utils.html import format_html
+from django.core.validators import MinValueValidator , MaxValueValidator
 
 
 class FormulaGroup( models.Model ):
@@ -22,7 +23,7 @@ class CTformula( models.Model ):
     formula_name = models.CharField( verbose_name = '公式名称' , max_length = 255 , blank = True , null = True )
     formula_content = models.CharField( verbose_name = '计算公式' , max_length = 255 )
     tax_name = models.CharField( verbose_name = '菌种名称' , max_length = 255 )
-    formula_version = models.CharField( verbose_name = '公式版本' , max_length = 255 )
+    version_num = models.IntegerField( verbose_name = '版本号' )
     example_data = models.FloatField( verbose_name = "输入示例" )
     result_data = models.FloatField( verbose_name = "输出结果" )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
@@ -115,9 +116,22 @@ class Carbon( models.Model ):
 
 # 最大值0，最小值0  为阴性；  最大值1，最小值1  为阳性
 class ReferenceRange( models.Model ):
+    L_CHOICES = (
+        (0 , '数值') ,
+        (1 , '科学记数法') ,
+        (2 , '百分数') ,
+        (3 , '阴阳') ,
+    )
     index_name = models.CharField( verbose_name = '指标名称' , max_length = 255 )  # 实验结果就是通过这个字段进行匹配查询的
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE )
     tax_name = models.CharField( verbose_name = '菌种名称' , max_length = 255 )
+    version_num = models.IntegerField( verbose_name = '版本号' )
+    reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
+                                        blank = True )
+    layout = models.IntegerField( verbose_name = '报告显示形式' , choices = L_CHOICES , default = 0 , null = True ,
+                                  blank = True )
+    point = models.IntegerField( verbose_name = '小数点位数' , default = 2 , null = True , blank = True ,
+                                 validators = [MinValueValidator( 0 ) , MaxValueValidator( 100 )] )
     max_value = models.FloatField( verbose_name = '最大值' , null = True , blank = True )
     min_value = models.FloatField( verbose_name = '最小值' , null = True , blank = True )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
@@ -128,17 +142,17 @@ class ReferenceRange( models.Model ):
     class Meta:
         verbose_name = '参考范围'
         verbose_name_plural = verbose_name
-        unique_together = ('index_name' , 'carbon_source' , 'tax_name')
+        unique_together = ('index_name' , 'carbon_source' , 'tax_name' , 'version_num')
 
     def __str__(self):
         return '%s' % self.index_name
 
 
 class Template( models.Model ):
-    product_name = models.CharField( '模板名称' , max_length = 100 )
-    version_num = models.CharField( '版本' , max_length = 40 )
-    upload_time = models.DateField( '上传时间' , blank = True , null = True , auto_now = True )
-    use_count = models.IntegerField( '使用次数' , default = 0 )
+    product_name = models.CharField( verbose_name = '模板名称' , max_length = 100 )
+    version_num = models.IntegerField( verbose_name = '版本号' )
+    upload_time = models.DateField( verbose_name = '上传时间' , blank = True , null = True , auto_now = True )
+    use_count = models.IntegerField( verbose_name = '使用次数' , default = 0 )
     file_template = models.FileField( verbose_name = '模板报告' , upload_to = "uploads/template/%Y/%m" , null = True ,
                                       blank = True )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now = True )

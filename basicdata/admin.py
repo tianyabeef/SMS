@@ -18,6 +18,15 @@ from import_export.admin import ImportExportActionModelAdmin
 admin.site.empty_value_display = '-empty-'
 
 
+def tran_format(value):
+    if value is not None:
+        if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
+            value = "%.2e" % value
+    else:
+        value = 0
+    return value
+
+
 class FormulaGroupResource( resources.ModelResource ):
     class Meta:
         model = FormulaGroup
@@ -67,6 +76,7 @@ class CTformulaForm( forms.ModelForm ):
         formula_content = cleaned_data.get( 'formula_content' )
         example_data = cleaned_data.get( 'example_data' )
         result_data = cleaned_data.get( 'result_data' )
+        tax_name = cleaned_data.get( 'tax_name' )
         if (formula_content is not None) and (example_data is not None) and (result_data is not None):
             if is_Chinese( formula_content ):
                 raise forms.ValidationError( "计算公式不能有中文,不能有=号，请检查输入的计算公式" )
@@ -75,19 +85,34 @@ class CTformulaForm( forms.ModelForm ):
             if round( float( formula( point ) ) , 10 ) != float( cleaned_data.get( 'result_data' ) ):
                 raise forms.ValidationError(
                     "系统计算预期与输出结果不一致，请检查输出结果。系统的结果是%s" % round( float( formula( point ) ) , 10 ) )
-        return cleaned_data
 
+        return cleaned_data
+    def clean_tax_name(self):
+        if Genus.objects.filter( china_name = self.cleaned_data["tax_name"] ).count( ) == 0:
+            raise forms.ValidationError( "菌种名称在基础数据管理中无法查询到" )
+        return self.cleaned_data ["tax_name"]
 
 class CTformulaResource( resources.ModelResource ):
     class Meta:
         model = CTformula
         skip_unchanged = True
         fields = (
-            'id' , 'number' , 'formula_group' , 'formula_name' , 'formula_content' , 'tax_name' , 'formula_version' ,
+            'id' , 'number' , 'formula_group' , 'formula_name' , 'formula_content' , 'tax_name' , 'version_num' ,
             'example_data' , 'result_data' , 'historys' , 'writer' , 'note')
         export_order = (
-            'id' , 'number' , 'formula_group' , 'formula_content' , 'formula_name' , 'tax_name' , 'formula_version' ,
+            'id' , 'number' , 'formula_group' , 'formula_content' , 'formula_name' , 'tax_name' , 'version_num' ,
             'example_data' , 'result_data' , 'historys' , 'writer' , 'note')
+    def before_import_row(self , row , **kwargs):
+        """
+        Calls :meth:`import_export.fields.Field.save` if ``Field.attribute``
+        and ``Field.column_name`` are found in ``data``.
+        """
+        genuss = Genus.objects.filter( china_name = row ['tax_name'] )
+        if genuss.count( ) == 0:
+            raise forms.ValidationError( '菌属名称有误，请到基础数据中核实。' )
+        fgroups = FormulaGroup.objects.filter( id = row ['formula_group'] )
+        if fgroups.count( ) == 0:
+            raise forms.ValidationError( '公式大类id有误，请到基础数据中核实。' )
 
 
 @admin.register( CTformula )
@@ -108,7 +133,7 @@ class CTformulaAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     fieldsets = (
         ('基本信息' , {
-            'fields': ('number' , 'formula_group' , 'formula_version' , 'tax_name')
+            'fields': ('number' , 'formula_group' , 'version_num' , 'tax_name')
         }) ,
         ('关键信息' , {
             'fields': ('formula_content' , 'example_data' , 'result_data')
@@ -126,9 +151,9 @@ class CTformulaAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def save_model(self , request , obj , form , change):
         obj.formula_name = obj.formula_group.name
         if obj.historys is None:
-            obj.historys = "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + obj.formula_version + ";时间:" + datetime.date.today( ).__str__( )
+            obj.historys = "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + str(obj.version_num) + ";时间:" + datetime.date.today( ).__str__( )
         else:
-            obj.historys = obj.historys + "\n" + "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + obj.formula_version + ";时间:" + obj.create_date.__str__( )
+            obj.historys = obj.historys + "\n" + "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + str(obj.version_num) + ";时间:" + obj.create_date.__str__( )
         obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
@@ -186,7 +211,7 @@ class GenusResource( resources.ModelResource ):
 
 @admin.register( Genus )
 class GenusAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id','taxid' , 'china_name' , 'english_name' , 'create_date' , 'writer')
+    list_display = ('id' , 'taxid' , 'china_name' , 'english_name' , 'create_date' , 'writer')
     list_display_links = ('taxid' ,)
     readonly_fields = ('historys' , 'writer')
     ordering = ('-create_date' ,)
@@ -320,11 +345,61 @@ class CarbonAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         obj.save( )
 
 
+def SciNotation(num , point):
+    if num == 0:
+        return 0
+    else:
+        rule = "{0:.%se}" % point
+        x = rule.format( num )
+        x = x.split( 'e' )
+        if (x [1]) [0] == "-":
+            if (x [1] [1:]) == "00":
+                return x [0] + "x10^(" + (x [1]) [0] + "0)"
+            else:
+                return x [0] + "x10^(" + (x [1]) [0] + (x [1] [1:]).lstrip( '0' ) + ")"
+        else:
+            if (x [1] [1:]) == "00":
+                return x [0] + "x10^0"
+            else:
+                return x [0] + "x10^" + (x [1]) [1:].lstrip( '0' )
+
+
+def get_reference_range(min_value , max_value , layout , point):
+    """
+    :param min_value: 调用函数前判断有值
+    :param max_value: 
+    :param layout: 
+    :param point: 
+    :return: 
+    (0 , '数值') ,
+    (1 , '科学记数法') ,
+    (2 , '百分数') ,
+    (3 , '阴阳') ,
+    """
+    if layout == 0:
+        rule = "{0:.%sf}" % point
+        reference_range = "%s~%s" % (rule.format( min_value ) , rule.format( max_value ))
+    elif layout == 1:
+        reference_range = '%s~%s' % (SciNotation( min_value , point ) , SciNotation( max_value , point ))
+    elif layout == 2:
+        rule = f'.{point}%'
+        reference_range = "%s~%s" % (format( min_value , rule ) , format( max_value , rule ))
+    else:
+        if (min_value == 1) and (max_value == 1):
+            reference_range = "阳性（+）"
+        elif (min_value == 0) and (max_value == 0):
+            reference_range = "阴性（-）"
+        else:
+            reference_range = ""
+
+    return reference_range
+
+
 class ReferenceRangeForm( forms.ModelForm ):
-    tax_name = forms.CharField( label = "菌种" , help_text = "与基础数据菌种信息名称保持一致,填入英文名称" ,
+    tax_name = forms.CharField( label = "菌种" , help_text = "与基础数据管理菌种信息名称保持一致,填入英文名称" ,
                                 required = True , widget = forms.TextInput(
-            attrs = {'class': 'vTextField , form-control' , 'placeholder': '与基础数据菌种信息名称保持一致,填入英文名称'} ) ,
-                                error_messages = {'required': '这个字段是必填项,填入英文名称。'} )
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': '与基础数据管理的菌种信息名称保持一致,填入英文名称'} ) ,
+                                error_messages = {'required': '这个字段是必填项,输入菌种英文名称。'} )
 
     class Meta:
         model = ReferenceRange
@@ -332,7 +407,7 @@ class ReferenceRangeForm( forms.ModelForm ):
 
     def clean_tax_name(self):
         if Genus.objects.filter( english_name = self.cleaned_data ["tax_name"] ).count( ) == 0:
-            raise forms.ValidationError( "菌种名称在数据库中无法查询到" )
+            raise forms.ValidationError( "菌种名称在基础数据管理中无法查询到" )
         return self.cleaned_data ["tax_name"]
 
 
@@ -341,10 +416,12 @@ class ReferenceRangeResource( resources.ModelResource ):
         model = ReferenceRange
         skip_unchanged = True
         fields = (
-            'id' , 'index_name' , 'carbon_source' , 'tax_name' , 'max_value' , 'min_value' , 'create_date' ,
+            'id' , 'index_name' , 'carbon_source' , 'tax_name' , 'version_num','max_value' , 'min_value' , 'point' , 'layout' ,
+            'reference_range' , 'create_date' ,
             'historys' , 'writer' , 'note')
         export_order = (
-            'id' , 'index_name' , 'carbon_source' , 'tax_name' , 'max_value' , 'min_value' , 'create_date' ,
+            'id' , 'index_name' , 'carbon_source' , 'tax_name' ,'version_num', 'max_value' , 'min_value' , 'point' , 'layout' ,
+            'reference_range' , 'create_date' ,
             'historys' , 'writer' , 'note')
 
         # TODO row ['writer'] = # 系统自动添加创建人
@@ -360,16 +437,27 @@ class ReferenceRangeResource( resources.ModelResource ):
             raise forms.ValidationError( '碳源名称有误，请到基础数据中核实。' )
         if genuss.count( ) == 0:
             raise forms.ValidationError( '菌属名称有误，请到基础数据中核实。' )
-        if (row['id'] == None) and (ReferenceRange.objects.filter( index_name = row ['index_name'] , carbon_source = row ['carbon_source'] ,
-                                       tax_name = row ['tax_name'] ).count()>0):
-            raise forms.ValidationError( '名称、碳源、菌种有冲突，不具有唯一性。' )
+        if (row ['id'] == None) and (
+                ReferenceRange.objects.filter( index_name = row ['index_name'] , carbon_source = row ['carbon_source'] ,
+                                               tax_name = row ['tax_name'] ,
+                                               version_num = row ['version_num'] ).count( ) > 0):
+            raise forms.ValidationError( '名称、碳源、菌种,版本，记录内容联合唯一，不能有冲突。' )
+
+    def before_save_instance(self , instance , using_transactions , dry_run):
+        """
+            Override to add additional logic. Does nothing by default.
+        """
+        instance.reference_range = get_reference_range( instance.min_value , instance.max_value , instance.layout ,
+                                                        instance.point )
 
 
 @admin.register( ReferenceRange )
 class ReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('index_name' , 'carbon_source' , 'tax_name' , 'max_value' , 'min_value' , 'create_date' , 'writer')
+    list_display = (
+        'index_name' , 'carbon_source' , 'tax_names' , 'version_num' , 'reference_range' , 'max_value' , 'min_value' ,
+        'create_date' , 'writer')
     list_display_links = ('index_name' ,)
-    readonly_fields = ('historys' , 'writer')
+    readonly_fields = ('historys' , 'writer' , 'reference_range')
     ordering = ('-create_date' ,)
     view_on_site = False
     list_max_show_all = 100
@@ -382,12 +470,20 @@ class ReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     # actions =
     fieldsets = (
         ('基本信息' , {
-            'fields': ('index_name' , 'carbon_source' , 'tax_name' , 'max_value' , 'min_value')
+            'fields': ('index_name' , 'carbon_source' , 'tax_name' , 'version_num' , 'max_value' , 'min_value')
+        }) ,
+        ('参考范围' , {
+            'fields': ('point' , 'layout' , 'reference_range') ,
         }) ,
         ('历史版本' , {
             'fields': ('historys' , 'writer' , 'note') ,
         }) ,
     )
+
+    def tax_names(self , obj):
+        return Genus.objects.get( english_name = obj.tax_name ).china_name
+
+    tax_names.short_description = '菌种'
 
     def get_changeform_initial_data(self , request):
         initial = super( ).get_changeform_initial_data( request )
@@ -402,6 +498,8 @@ class ReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = obj.historys + "\n" + "编号:" + obj.index_name + ";碳源:" + obj.carbon_source.name + ";菌种:" + obj.tax_name + ";最小:" + str(
                 obj.min_value ) + ";最大:" + str( obj.max_value ) + ";时间:" + datetime.date.today( ).__str__( )
         obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        if (obj.max_value is not None) and (obj.min_value is not None):
+            obj.reference_range = get_reference_range( obj.min_value , obj.max_value , obj.layout , obj.point )
         obj.save( )
 
 
@@ -442,10 +540,10 @@ class TemplateAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def save_model(self , request , obj , form , change):
         if obj.historys is None:
-            obj.historys = "编号:" + obj.product_name + ";版本:" + obj.version_num + ";模板:" + str(
+            obj.historys = "编号:" + obj.product_name + ";版本:" + str(obj.version_num) + ";模板:" + str(
                 obj.file_template ) + ";时间:" + datetime.date.today( ).__str__( )
         else:
-            obj.historys = obj.historys + "\n" + "编号:" + obj.product_name + ";版本:" + obj.version_num + ";模板:" + str(
+            obj.historys = obj.historys + "\n" + "编号:" + obj.product_name + ";版本:" + str(obj.version_num) + ";模板:" + str(
                 obj.file_template ) + ";时间:" + datetime.date.today( ).__str__( )
         obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )

@@ -1,4 +1,5 @@
 import datetime
+import tablib
 from django.contrib import admin
 from import_export import resources
 from import_export.admin import ImportExportActionModelAdmin
@@ -16,11 +17,12 @@ from basicdata.models import Carbon
 from basicdata.models import Genus
 from django.contrib import messages
 from examinationsample.models import Progress , Sample
-from examinationsample.admin import tran_format
+from django.db.models.query import QuerySet
+
 admin.site.empty_value_display = '-empty-'
 
 
-def get_referenceRange(objects , carbon_source , tax_name , field_name , obj_field):
+def get_status(objects , carbon_source , tax_name , field_name , obj_field):
     """
     :param tax_name:
     :param carbon_source:
@@ -31,7 +33,7 @@ def get_referenceRange(objects , carbon_source , tax_name , field_name , obj_fie
     """
     obj = ReferenceRange.objects.filter(
         index_name = objects._meta.get_field( field_name ).verbose_name , carbon_source = carbon_source ,
-        tax_name = tax_name ) [0]
+        tax_name = tax_name ) [0]  # TODO 挑选一个离近期最近的对象
     mi = obj.min_value
     ma = obj.max_value
     mi = float( mi )
@@ -42,13 +44,7 @@ def get_referenceRange(objects , carbon_source , tax_name , field_name , obj_fie
         obj_field_status = 0  # 偏高
     else:
         obj_field_status = 1  # 正常
-    result = str( tran_format( mi ) ) + '~' + str( tran_format( ma ) )
-
-    if (mi == 1) and (ma == 1):
-        result = "1"
-    if (mi == 0) and (ma == 0):
-        result = "0"
-    print( result )
+    result = obj.reference_range
     return obj_field_status , result
 
 
@@ -140,36 +136,36 @@ class ConventionalIndexResource( resources.ModelResource ):
         """
         if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                 'occult_Tf' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ConventionalIndex , instance.carbon_source ,
-                                                           instance.genus.english_name , 'occult_Tf' ,
-                                                           instance.occult_Tf )
+            status , reference_range = get_status( ConventionalIndex , instance.carbon_source ,
+                                                   instance.genus.english_name , 'occult_Tf' ,
+                                                   instance.occult_Tf )
             instance.occult_Tf_reference_range = reference_range
             instance.occult_Tf_status = status
         if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                 'occult_Tf' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ConventionalIndex , instance.carbon_source ,
-                                                           instance.genus.english_name , 'occult_Hb' ,
-                                                           instance.occult_Hb )
+            status , reference_range = get_status( ConventionalIndex , instance.carbon_source ,
+                                                   instance.genus.english_name , 'occult_Hb' ,
+                                                   instance.occult_Hb )
             instance.occult_Hb_reference_range = reference_range
             instance.occult_Hb_status = status
         if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                 'hp' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ConventionalIndex , instance.carbon_source ,
-                                                           instance.genus.english_name , 'hp' , instance.hp )
+            status , reference_range = get_status( ConventionalIndex , instance.carbon_source ,
+                                                   instance.genus.english_name , 'hp' , instance.hp )
             instance.hp_reference_range = reference_range
             instance.hp_status = status
         if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                 'calprotectin' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ConventionalIndex , instance.carbon_source ,
-                                                           instance.genus.english_name , 'calprotectin' ,
-                                                           instance.calprotectin )
+            status , reference_range = get_status( ConventionalIndex , instance.carbon_source ,
+                                                   instance.genus.english_name , 'calprotectin' ,
+                                                   instance.calprotectin )
             instance.calprotectin_reference_range = reference_range
             instance.calprotectin_status = status
         if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                 'ph_value' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ConventionalIndex , instance.carbon_source ,
-                                                           instance.genus.english_name , 'ph_value' ,
-                                                           instance.ph_value )
+            status , reference_range = get_status( ConventionalIndex , instance.carbon_source ,
+                                                   instance.genus.english_name , 'ph_value' ,
+                                                   instance.ph_value )
             instance.ph_value_reference_range = reference_range
             instance.ph_value_status = status
 
@@ -259,8 +255,8 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                     'occult_Tf' ).verbose_name , carbon_source = obj.carbon_source ,
                                               tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ConventionalIndex , obj.carbon_source ,
-                                                               obj.genus.english_name , 'occult_Tf' , obj.occult_Tf )
+                status , reference_range = get_status( ConventionalIndex , obj.carbon_source ,
+                                                       obj.genus.english_name , 'occult_Tf' , obj.occult_Tf )
                 obj.occult_Tf_reference_range = reference_range
                 obj.occult_Tf_status = status
             else:
@@ -270,8 +266,8 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                     'occult_Hb' ).verbose_name , carbon_source = obj.carbon_source ,
                                               tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ConventionalIndex , obj.carbon_source ,
-                                                               obj.genus.english_name , 'occult_Hb' , obj.occult_Hb )
+                status , reference_range = get_status( ConventionalIndex , obj.carbon_source ,
+                                                       obj.genus.english_name , 'occult_Hb' , obj.occult_Hb )
                 obj.occult_Hb_reference_range = reference_range
                 obj.occult_Hb_status = status
 
@@ -282,8 +278,8 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                     'hp' ).verbose_name , carbon_source = obj.carbon_source ,
                                               tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ConventionalIndex , obj.carbon_source ,
-                                                               obj.genus.english_name , 'hp' , obj.hp )
+                status , reference_range = get_status( ConventionalIndex , obj.carbon_source ,
+                                                       obj.genus.english_name , 'hp' , obj.hp )
                 obj.hp_reference_range = reference_range
                 obj.hp_status = status
             else:
@@ -293,9 +289,9 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
                     'calprotectin' ).verbose_name , carbon_source = obj.carbon_source ,
                                               tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ConventionalIndex , obj.carbon_source ,
-                                                               obj.genus.english_name , 'calprotectin' ,
-                                                               obj.calprotectin )
+                status , reference_range = get_status( ConventionalIndex , obj.carbon_source ,
+                                                       obj.genus.english_name , 'calprotectin' ,
+                                                       obj.calprotectin )
                 obj.calprotectin_reference_range = reference_range
                 obj.calprotectin_status = status
             else:
@@ -306,8 +302,8 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     'ph_value' ).verbose_name , carbon_source = obj.carbon_source ,
                                               tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
 
-                status , reference_range = get_referenceRange( ConventionalIndex , obj.carbon_source ,
-                                                               obj.genus.english_name , 'ph_value' , obj.ph_value )
+                status , reference_range = get_status( ConventionalIndex , obj.carbon_source ,
+                                                       obj.genus.english_name , 'ph_value' , obj.ph_value )
                 obj.ph_value_reference_range = reference_range
                 obj.ph_value_status = status
 
@@ -379,29 +375,29 @@ class BioChemicalIndexesResource( resources.ModelResource ):
         """
         if ReferenceRange.objects.filter( index_name = BioChemicalIndexes._meta.get_field(
                 'occult_Tf' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( BioChemicalIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'fecal_nitrogen' ,
-                                                           instance.fecal_nitrogen )
+            status , reference_range = get_status( BioChemicalIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'fecal_nitrogen' ,
+                                                   instance.fecal_nitrogen )
             instance.fecal_nitrogen_reference_range = reference_range
             instance.fecal_nitrogen_status = status
         if ReferenceRange.objects.filter( index_name = BioChemicalIndexes._meta.get_field(
                 'bile_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( BioChemicalIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'bile_acid' ,
-                                                           instance.bile_acid )
+            status , reference_range = get_status( BioChemicalIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'bile_acid' ,
+                                                   instance.bile_acid )
             instance.bile_acid_reference_range = reference_range
             instance.bile_acid_status = status
 
 
 class BioChemicalIndexesForm( forms.ModelForm ):
     fecal_nitrogen = forms.DecimalField( label = "粪氨" , help_text = "单位：μmol/g wet feces" , required = True ,
-                                      widget = forms.NumberInput(
-                                          attrs = {'class': ' form-control' , 'placeholder': '示例：26.79'} ) ,
-                                      error_messages = {'required': '单位：μmol/g wet feces'} )
+                                         widget = forms.NumberInput(
+                                             attrs = {'class': ' form-control' , 'placeholder': '示例：26.79'} ) ,
+                                         error_messages = {'required': '单位：μmol/g wet feces'} )
     bile_acid = forms.DecimalField( label = "粪胆汁酸" , help_text = "单位：μmol/g wet feces" , required = True ,
-                                 widget = forms.NumberInput(
-                                     attrs = {'class': ' form-control' , 'placeholder': '示例：4.15'} ) ,
-                                 error_messages = {'required': '单位：μmol/g wet feces'} )
+                                    widget = forms.NumberInput(
+                                        attrs = {'class': ' form-control' , 'placeholder': '示例：4.15'} ) ,
+                                    error_messages = {'required': '单位：μmol/g wet feces'} )
 
     class Meta:
         model = BioChemicalIndexes
@@ -488,9 +484,9 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
             if ReferenceRange.objects.filter( index_name = BioChemicalIndexes._meta.get_field(
                     'fecal_nitrogen' ).verbose_name , carbon_source = obj.carbon_source ,
                                               tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( BioChemicalIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'fecal_nitrogen' ,
-                                                               obj.fecal_nitrogen )
+                status , reference_range = get_status( BioChemicalIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'fecal_nitrogen' ,
+                                                       obj.fecal_nitrogen )
                 obj.fecal_nitrogen_reference_range = reference_range
                 obj.fecal_nitrogen_status = status
             else:
@@ -501,8 +497,8 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
             if ReferenceRange.objects.filter( index_name = BioChemicalIndexes._meta.get_field(
                     'bile_acid' ).verbose_name , carbon_source = obj.carbon_source ,
                                               tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( BioChemicalIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'bile_acid' , obj.bile_acid )
+                status , reference_range = get_status( BioChemicalIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'bile_acid' , obj.bile_acid )
                 obj.bile_acid_reference_range = reference_range
                 obj.bile_acid_status = status
 
@@ -529,6 +525,34 @@ class QpcrIndexesResource( resources.ModelResource ):
 
     def get_export_headers(self):
         return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
+
+    def export(self , queryset=None , *args , **kwargs):
+        """
+                Exports a resource.
+                """
+
+        self.before_export( queryset , *args , **kwargs )
+
+        if queryset is None:
+            queryset = self.get_queryset( )
+        headers = self.get_export_headers( )
+        data = tablib.Dataset( headers = headers )
+
+        if isinstance( queryset , QuerySet ):
+            # Iterate without the queryset cache, to avoid wasting memory when
+            # exporting large datasets.
+            iterable = queryset.iterator( )
+        else:
+            iterable = queryset
+        for obj in iterable:
+            cts = CTformula.objects.filter( tax_name = obj.genus_zh ).order_by( "-version_num" )
+            if cts.count( ) > 0:
+                obj.formula_number = cts [0].number
+            data.append( self.export_resource( obj ) )
+
+        self.after_export( queryset , data , *args , **kwargs )
+
+        return data
 
     def before_import_row(self , row , **kwargs):
         """
@@ -583,9 +607,9 @@ class QpcrIndexesResource( resources.ModelResource ):
             if ReferenceRange.objects.filter( index_name = QpcrIndexes._meta.get_field(
                     'concentration' ).verbose_name , carbon_source = instance.carbon_source ,
                                               tax_name = instance.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考范围
-                status , reference_range = get_referenceRange( QpcrIndexes , instance.carbon_source ,
-                                                               instance.genus.english_name , 'concentration' ,
-                                                               instance.concentration )
+                status , reference_range = get_status( QpcrIndexes , instance.carbon_source ,
+                                                       instance.genus.english_name , 'concentration' ,
+                                                       instance.concentration )
                 instance.concentration_reference_range = reference_range
                 instance.concentration_status = status
 
@@ -640,9 +664,12 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         # 根据 obj 是否为空来判断,修改数据时不能修改样本编号，
         if obj:
             self.readonly_fields = (
-                'sample_number' , 'concentration' , 'concentration_reference_range' , 'concentration_status')
+                'sample_number' , 'concentration' , 'concentration_reference_range' , 'concentration_status' ,
+                'genus_zh' , 'carbon_source_zh')
         else:
-            self.readonly_fields = ('concentration' , 'concentration_reference_range' , 'concentration_status')
+            self.readonly_fields = (
+                'concentration' , 'concentration_reference_range' , 'concentration_status' , 'genus_zh' ,
+                'carbon_source_zh')
         # if request.user.is_superuser: TODO 上线后取消注释
         #     self.readonly_fields = ()
         return self.readonly_fields
@@ -708,9 +735,9 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if ReferenceRange.objects.filter( index_name = QpcrIndexes._meta.get_field(
                 'concentration' ).verbose_name , carbon_source = obj.carbon_source ,
                                           tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( QpcrIndexes , obj.carbon_source ,
-                                                           obj.genus.english_name , 'concentration' ,
-                                                           obj.concentration )
+            status , reference_range = get_status( QpcrIndexes , obj.carbon_source ,
+                                                   obj.genus.english_name , 'concentration' ,
+                                                   obj.concentration )
             obj.concentration_reference_range = reference_range
             obj.concentration_status = status
         else:
@@ -725,19 +752,25 @@ class ScfasIndexesResource( resources.ModelResource ):
         fields = ('id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
                   'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
                   'isovaleric' ,
-                  'acid_first' , 'acid_second')
+                  'acid_first' , 'acid_second', 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
+                        'isobutyric_acid_ratio' , 'valeric_ratio' ,
+                        'isovaleric_ratio')
         export_order = ('id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
                         'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
                         'isovaleric' ,
-                        'acid_first' , 'acid_second')
+                        'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
+                        'isobutyric_acid_ratio' , 'valeric_ratio' ,
+                        'isovaleric_ratio')
 
     def get_diff_headers(self):
         return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
-                '异丁酸' , '戊酸' , '异戊酸' , '乙丙丁酸占总酸比' , '异丁戊异戊占总酸比']
+                '异丁酸' , '戊酸' , '异戊酸' , '乙丙丁酸占总酸比' , '异丁戊异戊占总酸比' , '乙酸占比' , '丙酸占比' , '丁酸占比' ,
+                '异丁酸占比' , '戊酸占比' , '异戊酸占比']
 
     def get_export_headers(self):
         return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
-                '异丁酸' , '戊酸' , '异戊酸' , '乙丙丁酸占总酸比' , '异丁戊异戊占总酸比']
+                '异丁酸' , '戊酸' , '异戊酸' , '乙丙丁酸占总酸比' , '异丁戊异戊占总酸比' , '乙酸占比' , '丙酸占比' , '丁酸占比' ,
+                '异丁酸占比' , '戊酸占比' , '异戊酸占比']
 
     def before_import_row(self , row , **kwargs):
         """
@@ -777,13 +810,27 @@ class ScfasIndexesResource( resources.ModelResource ):
             'acid_first' ).verbose_name , carbon_source = carbons [0] , tax_name = genuss [0].english_name )
         acid_second_reference_ranges = ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
             'acid_second' ).verbose_name , carbon_source = carbons [0] , tax_name = genuss [0].english_name )
+        acetic_acid_ratio_referenceRanges = ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+            'acetic_acid_ratio' ).verbose_name , carbon_source = carbons [0] , tax_name = genuss [0].english_name )
+        propionic_ratio_referenceRanges = ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+            'propionic_ratio' ).verbose_name , carbon_source = carbons [0] , tax_name = genuss [0].english_name )
+        butyric_ratio_referenceRanges = ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+            'butyric_ratio' ).verbose_name , carbon_source = carbons [0] , tax_name = genuss [0].english_name )
+        isobutyric_acid_ratio_referenceRanges = ReferenceRange.objects.filter(
+            index_name = ScfasIndexes._meta.get_field(
+                'isobutyric_acid_ratio' ).verbose_name , carbon_source = carbons [0] ,
+            tax_name = genuss [0].english_name )
+        valeric_ratio_referenceRanges = ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+            'valeric_ratio' ).verbose_name , carbon_source = carbons [0] , tax_name = genuss [0].english_name )
+        isovaleric_ratio_reference_ranges = ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+            'isovaleric_ratio' ).verbose_name , carbon_source = carbons [0] , tax_name = genuss [0].english_name )
 
         if total_acid_referenceRanges.count( ) == 0:
-            raise forms.ValidationError( '%s 总酸参考范围有误，请到基础数据中核实。' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 总酸参考范围有误，请到基础数据中核实。' % genuss [0].english_name )
         if acetic_acid_referenceRanges.count( ) == 0:
-            raise forms.ValidationError( '%s 乙酸参考范围有误，请到基础数据中核实。' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 乙酸参考范围有误，请到基础数据中核实。' % genuss [0].english_name )
         if propionic_referenceRanges.count( ) == 0:
-            raise forms.ValidationError( '%s 丙酸参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 丙酸参考范围有误，请到基础数据中核实' % genuss [0].english_name )
         if butyric_referenceRanges.count( ) == 0:
             raise forms.ValidationError( '%s 丁酸参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
         if isobutyric_acid_referenceRanges.count( ) == 0:
@@ -791,17 +838,29 @@ class ScfasIndexesResource( resources.ModelResource ):
         if valeric_referenceRanges.count( ) == 0:
             raise forms.ValidationError( '%s 戊酸参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
         if isovaleric_reference_ranges.count( ) == 0:
-            raise forms.ValidationError( '%s 异戊酸参考参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 异戊酸参考参考范围有误，请到基础数据中核实' % genuss [0].english_name )
         if isovaleric1_reference_ranges.count( ) == 0:
-            raise forms.ValidationError( '%s 扩展酸1参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 扩展酸1参考范围有误，请到基础数据中核实' % genuss [0].english_name )
         if isovaleric2_reference_ranges.count( ) == 0:
-            raise forms.ValidationError( '%s 扩展酸2参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 扩展酸2参考范围有误，请到基础数据中核实' % genuss [0].english_name )
         if isovaleric3_reference_ranges.count( ) == 0:
-            raise forms.ValidationError( '%s 扩展酸3参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 扩展酸3参考范围有误，请到基础数据中核实' % genuss [0].english_name )
         if acid_first_reference_ranges.count( ) == 0:
-            raise forms.ValidationError( '%s 乙丙丁酸占总酸比参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 乙丙丁酸占总酸比参考范围有误，请到基础数据中核实' % genuss [0].english_name )
         if acid_second_reference_ranges.count( ) == 0:
-            raise forms.ValidationError( '%s 异丁戊异戊占总酸比参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+            raise forms.ValidationError( '%s 异丁戊异戊占总酸比参考范围有误，请到基础数据中核实' % genuss [0].english_name )
+        if acetic_acid_ratio_referenceRanges.count( ) == 0:
+            raise forms.ValidationError( '%s 乙酸占比参考范围有误，请到基础数据中核实。' % genuss [0].english_name )
+        if propionic_ratio_referenceRanges.count( ) == 0:
+            raise forms.ValidationError( '%s 丙酸占比参考范围有误，请到基础数据中核实' % genuss [0].english_name )
+        if butyric_ratio_referenceRanges.count( ) == 0:
+            raise forms.ValidationError( '%s 丁酸占比参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+        if isobutyric_acid_ratio_referenceRanges.count( ) == 0:
+            raise forms.ValidationError( '%s 异丁酸占比参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+        if valeric_ratio_referenceRanges.count( ) == 0:
+            raise forms.ValidationError( '%s 戊酸占比参考范围有误，请到基础数据中核实' % (genuss [0].english_name) )
+        if isovaleric_ratio_reference_ranges.count( ) == 0:
+            raise forms.ValidationError( '%s 异戊酸占比参考参考范围有误，请到基础数据中核实' % genuss [0].english_name )
 
     def get_or_init_instance(self , instance_loader , row):
         """
@@ -822,6 +881,12 @@ class ScfasIndexesResource( resources.ModelResource ):
         row ['isovaleric'] = row ['异戊酸']
         row ['acid_first'] = row ['乙丙丁酸占总酸比']
         row ['acid_second'] = row ['异丁戊异戊占总酸比']
+        row ['acetic_acid_ratio'] = row ['乙酸占比']
+        row ['propionic_ratio'] = row ['丙酸占比']
+        row ['butyric_ratio'] = row ['丁酸占比']
+        row ['isobutyric_acid_ratio'] = row ['异丁酸占比']
+        row ['valeric_ratio'] = row ['戊酸占比']
+        row ['isovaleric_ratio'] = row ['异戊酸占比']
         if instance:
             return instance , False
         else:
@@ -844,69 +909,116 @@ class ScfasIndexesResource( resources.ModelResource ):
         if (instance.isobutyric_acid is not None) and (instance.valeric is not None) and (
                 instance.isovaleric is not None):
             instance.acid_second = (
-                                               instance.isobutyric_acid + instance.valeric + instance.isovaleric) / instance.total_acid
+                                           instance.isobutyric_acid + instance.valeric + instance.isovaleric) / instance.total_acid
 
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'total_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'total_acid' ,
-                                                           instance.total_acid )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'total_acid' ,
+                                                   instance.total_acid )
             instance.total_acid_reference_range = reference_range
             instance.total_acid_status = status
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'acetic_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'acetic_acid' ,
-                                                           instance.acetic_acid )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'acetic_acid' ,
+                                                   instance.acetic_acid )
             instance.acetic_acid_reference_range = reference_range
             instance.acetic_acid_status = status
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'propionic' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'propionic' ,
-                                                           instance.propionic )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'propionic' ,
+                                                   instance.propionic )
             instance.propionic_reference_range = reference_range
             instance.propionic_status = status
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'butyric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'butyric' , instance.butyric )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'butyric' , instance.butyric )
             instance.butyric_reference_range = reference_range
             instance.butyric_status = status
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'isobutyric_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'isobutyric_acid' ,
-                                                           instance.isobutyric_acid )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'isobutyric_acid' ,
+                                                   instance.isobutyric_acid )
             instance.isobutyric_acid_reference_range = reference_range
             instance.isobutyric_acid_status = status
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'valeric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'valeric' , instance.valeric )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'valeric' , instance.valeric )
             instance.valeric_reference_range = reference_range
             instance.valeric_status = status
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'isovaleric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'isovaleric' ,
-                                                           instance.isovaleric )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'isovaleric' ,
+                                                   instance.isovaleric )
             instance.isovaleric_reference_range = reference_range
             instance.isovaleric_status = status
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'acid_first' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'acid_first' ,
-                                                           instance.acid_first )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'acid_first' ,
+                                                   instance.acid_first )
             instance.acid_first_reference_range = reference_range
             instance.acid_first_status = status
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'acid_second' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( ScfasIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'acid_second' ,
-                                                           instance.acid_second )
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'acid_second' ,
+                                                   instance.acid_second )
             instance.acid_second_reference_range = reference_range
             instance.acid_second_status = status
+        if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                'acetic_acid_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'acetic_acid_ratio' ,
+                                                   instance.acetic_acid_ratio )
+            instance.acetic_acid_ratio_reference_range = reference_range
+            instance.acetic_acid_ratio_status = status
+
+        if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                'propionic_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'propionic_ratio' ,
+                                                   instance.propionic_ratio )
+            instance.propionic_ratio_reference_range = reference_range
+            instance.propionic_ratio_status = status
+
+        if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                'butyric_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'butyric_ratio' ,
+                                                   instance.butyric_ratio )
+            instance.butyric_ratio_reference_range = reference_range
+            instance.butyric_ratio_status = status
+
+        if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                'isobutyric_acid_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'isobutyric_acid_ratio' ,
+                                                   instance.isobutyric_acid_ratio )
+            instance.isobutyric_acid_ratio_reference_range = reference_range
+            instance.isobutyric_acid_ratio_status = status
+
+        if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                'valeric_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'valeric_ratio' ,
+                                                   instance.valeric_ratio )
+            instance.valeric_ratio_reference_range = reference_range
+            instance.valeric_ratio_status = status
+
+        if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                'isovaleric_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+            status , reference_range = get_status( ScfasIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'isovaleric_ratio' ,
+                                                   instance.isovaleric_ratio )
+            instance.isovaleric_ratio_reference_range = reference_range
+            instance.isovaleric_ratio_status = status
 
 
 @admin.register( ScfasIndexes )
@@ -928,8 +1040,9 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     # list_editable =
     actions = ['make_save' , 'make_finish' , 'export_admin_action']
     exclude = (
-    'isovaleric1' , 'isovaleric1_status' , 'isovaleric1_reference_range' , 'isovaleric2' , 'isovaleric2_status' ,
-    'isovaleric2_reference_range' , 'isovaleric3' , 'isovaleric3_status' , 'isovaleric3_reference_range','carbon_source_zh','genus_zh')
+        'isovaleric1' , 'isovaleric1_status' , 'isovaleric1_reference_range' , 'isovaleric2' , 'isovaleric2_status' ,
+        'isovaleric2_reference_range' , 'isovaleric3' , 'isovaleric3_status' , 'isovaleric3_reference_range' ,
+        'carbon_source_zh' , 'genus_zh')
 
     def get_readonly_fields(self , request , obj=None):
         # 根据 obj 是否为空来判断,修改数据时不能修改样本编号，
@@ -1006,9 +1119,9 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'acetic_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
 
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'acetic_acid' ,
-                                                               obj.acetic_acid )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'acetic_acid' ,
+                                                       obj.acetic_acid )
                 obj.acetic_acid_reference_range = reference_range
                 obj.acetic_acid_status = status
             else:
@@ -1016,8 +1129,8 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if obj.propionic is not None:
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'propionic' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'propionic' , obj.propionic )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'propionic' , obj.propionic )
                 obj.propionic_reference_range = reference_range
                 obj.propionic_status = status
             else:
@@ -1025,8 +1138,8 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if obj.butyric is not None:
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'butyric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'butyric' , obj.butyric )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'butyric' , obj.butyric )
                 obj.butyric_reference_range = reference_range
                 obj.butyric_status = status
             else:
@@ -1034,9 +1147,9 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if obj.isobutyric_acid is not None:
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'isobutyric_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'isobutyric_acid' ,
-                                                               obj.isobutyric_acid )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'isobutyric_acid' ,
+                                                       obj.isobutyric_acid )
                 obj.isobutyric_acid_reference_range = reference_range
                 obj.isobutyric_acid_status = status
             else:
@@ -1044,8 +1157,8 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if obj.valeric is not None:
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'valeric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'valeric' , obj.valeric )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'valeric' , obj.valeric )
                 obj.valeric_reference_range = reference_range
                 obj.valeric_status = status
             else:
@@ -1053,8 +1166,8 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if obj.isovaleric is not None:
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'isovaleric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'isovaleric' , obj.isovaleric )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'isovaleric' , obj.isovaleric )
                 obj.isovaleric_reference_range = reference_range
                 obj.isovaleric_status = status
             else:
@@ -1071,11 +1184,99 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if (obj.isobutyric_acid is not None) and (obj.valeric is not None) and (obj.isovaleric is not None):
             obj.acid_second = (obj.isobutyric_acid + obj.valeric + obj.isovaleric) / obj.total_acid
 
+        if obj.acetic_acid is not None:
+            obj.acetic_acid_ratio = obj.acetic_acid / obj.total_acid
+
+        if obj.propionic is not None:
+            obj.propionic_ratio = obj.propionic / obj.total_acid
+
+        if obj.butyric is not None:
+            obj.butyric_ratio = obj.butyric / obj.total_acid
+
+        if obj.isobutyric_acid is not None:
+            obj.isobutyric_acid_ratio = obj.isobutyric_acid / obj.total_acid
+
+        if obj.valeric is not None:
+            obj.valeric_ratio = obj.valeric / obj.total_acid
+
+        if obj.isovaleric is not None:
+            obj.isovaleric_ratio = obj.isovaleric / obj.total_acid
+
+        if obj.acetic_acid_ratio is not None:
+            if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                    'acetic_acid_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'acetic_acid_ratio' ,
+                                                       obj.acetic_acid_ratio )
+                obj.acetic_acid_ratio_reference_range = reference_range
+                obj.acetic_acid_ratio_status = status
+
+            else:
+                self.message_user( request , '乙酸占比 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
+
+        if obj.propionic_ratio is not None:
+            if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                    'propionic_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'propionic_ratio' ,
+                                                       obj.propionic_ratio )
+                obj.propionic_ratio_reference_range = reference_range
+                obj.propionic_ratio_status = status
+
+            else:
+                self.message_user( request , '丙酸占比 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
+        if obj.butyric_ratio is not None:
+            if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                    'butyric_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'butyric_ratio' , obj.butyric_ratio )
+                obj.butyric_ratio_reference_range = reference_range
+                obj.butyric_ratio_status = status
+
+            else:
+                self.message_user( request , '丁酸占比 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
+
+        if obj.isobutyric_acid_ratio is not None:
+            if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                    'isobutyric_acid_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'isobutyric_acid_ratio' ,
+                                                       obj.isobutyric_acid_ratio )
+                obj.isobutyric_acid_ratio_reference_range = reference_range
+                obj.isobutyric_acid_ratio_status = status
+
+            else:
+                self.message_user( request , '异丁酸占比 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
+
+        if obj.valeric_ratio is not None:
+            if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                    'valeric_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'valeric_ratio' ,
+                                                       obj.valeric_ratio )
+                obj.valeric_ratio_reference_range = reference_range
+                obj.valeric_ratio_status = status
+
+            else:
+                self.message_user( request , '戊酸占比 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
+
+        if obj.isovaleric_ratio is not None:
+            if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
+                    'isovaleric_ratio' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'isovaleric_ratio' ,
+                                                       obj.isovaleric_ratio )
+                obj.isovaleric_ratio_reference_range = reference_range
+                obj.isovaleric_ratio_status = status
+
+            else:
+                self.message_user( request , '异戊酸占比 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
+
         if obj.acid_first is not None:
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'acid_first' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'acid_first' , obj.acid_first )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'acid_first' , obj.acid_first )
                 obj.acid_first_reference_range = reference_range
                 obj.acid_first_status = status
 
@@ -1085,9 +1286,9 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if obj.acid_second is not None:
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'acid_second' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'acid_second' ,
-                                                               obj.acid_second )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'acid_second' ,
+                                                       obj.acid_second )
                 obj.acid_second_reference_range = reference_range
                 obj.acid_second_status = status
             else:
@@ -1096,8 +1297,8 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if obj.total_acid is not None:
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'total_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( ScfasIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'total_acid' , obj.total_acid )
+                status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'total_acid' , obj.total_acid )
                 obj.total_acid_reference_range = reference_range
                 obj.total_acid_status = status
             else:
@@ -1169,15 +1370,15 @@ class DegradationIndexesResource( resources.ModelResource ):
 
         if ReferenceRange.objects.filter( index_name = DegradationIndexes._meta.get_field(
                 'degradation' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( DegradationIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'degradation' ,
-                                                           instance.degradation )
+            status , reference_range = get_status( DegradationIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'degradation' ,
+                                                   instance.degradation )
             instance.degradation_reference_range = reference_range
             instance.degradation_status = status
         if ReferenceRange.objects.filter( index_name = DegradationIndexes._meta.get_field(
                 'gas' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_referenceRange( DegradationIndexes , instance.carbon_source ,
-                                                           instance.genus.english_name , 'gas' , instance.gas )
+            status , reference_range = get_status( DegradationIndexes , instance.carbon_source ,
+                                                   instance.genus.english_name , 'gas' , instance.gas )
             instance.gas_reference_range = reference_range
             instance.gas_status = status
 
@@ -1259,9 +1460,9 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
         if obj.degradation is not None:
             if ReferenceRange.objects.filter( index_name = DegradationIndexes._meta.get_field(
                     'degradation' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( DegradationIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'degradation' ,
-                                                               obj.degradation )
+                status , reference_range = get_status( DegradationIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'degradation' ,
+                                                       obj.degradation )
                 obj.degradation_reference_range = reference_range
                 obj.degradation_status = status
             else:
@@ -1270,8 +1471,8 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
         if obj.gas is not None:
             if ReferenceRange.objects.filter( index_name = DegradationIndexes._meta.get_field(
                     'gas' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-                status , reference_range = get_referenceRange( DegradationIndexes , obj.carbon_source ,
-                                                               obj.genus.english_name , 'gas' , obj.gas )
+                status , reference_range = get_status( DegradationIndexes , obj.carbon_source ,
+                                                       obj.genus.english_name , 'gas' , obj.gas )
                 obj.gas_reference_range = reference_range
                 obj.gas_status = status
             else:

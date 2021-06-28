@@ -266,6 +266,42 @@ class ScfasIndexes( models.Model ):
                                               blank = True )
     acid_second_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
                                                     blank = True )
+    acetic_acid_ratio = models.DecimalField( verbose_name = '乙酸占比' , max_digits = 12 , decimal_places = 4 , null = True ,
+                                       blank = True )
+    acetic_acid_ratio_status = models.IntegerField( verbose_name = '乙酸占比状态' , choices = STATUS_CHOICES , null = True ,
+                                              blank = True )
+    acetic_acid_ratio_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
+                                                    blank = True )
+    propionic_ratio = models.DecimalField( verbose_name = '丙酸占比' , max_digits = 12 , decimal_places = 4 , null = True ,
+                                     blank = True )
+    propionic_ratio_status = models.IntegerField( verbose_name = '丙酸占比状态' , choices = STATUS_CHOICES , null = True ,
+                                            blank = True )
+    propionic_ratio_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
+                                                  blank = True )
+    butyric_ratio = models.DecimalField( verbose_name = '丁酸占比' , max_digits = 12 , decimal_places = 4 , null = True ,
+                                   blank = True )
+    butyric_ratio_status = models.IntegerField( verbose_name = '丁酸占比状态' , choices = STATUS_CHOICES , null = True ,
+                                          blank = True )
+    butyric_ratio_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
+                                                blank = True )
+    isobutyric_acid_ratio = models.DecimalField( verbose_name = '异丁酸占比' , max_digits = 12 , decimal_places = 4 , null = True ,
+                                           blank = True )
+    isobutyric_acid_ratio_status = models.IntegerField( verbose_name = '异丁酸占比状态' , choices = STATUS_CHOICES , null = True ,
+                                                  blank = True )
+    isobutyric_acid_ratio_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
+                                                        blank = True )
+    valeric_ratio = models.DecimalField( verbose_name = '戊酸占比' , max_digits = 12 , decimal_places = 4 , null = True ,
+                                   blank = True )
+    valeric_ratio_status = models.IntegerField( verbose_name = '戊酸占比状态' , choices = STATUS_CHOICES , null = True ,
+                                          blank = True )
+    valeric_ratio_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
+                                                blank = True )
+    isovaleric_ratio = models.DecimalField( verbose_name = '异戊酸占比' , max_digits = 12 , decimal_places = 4 , null = True ,
+                                      blank = True )
+    isovaleric_ratio_status = models.IntegerField( verbose_name = '异戊酸占比状态' , choices = STATUS_CHOICES , null = True ,
+                                             blank = True )
+    isovaleric_ratio_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
+                                                   blank = True )
     is_status = models.IntegerField( verbose_name = '状态' , choices = TEST_CHOICES , default = 0 , null = True ,
                                      blank = True )
 

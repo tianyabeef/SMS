@@ -1,40 +1,33 @@
-import os
-from django.core import serializers
-from django.contrib import admin
+import datetime
 import json
-from docxtpl import DocxTemplate
+import os
+import re
+
+import jinja2
+from django import forms
+from django.contrib import admin
+from django.contrib import messages
+from django.core import serializers
+from docxtpl import DocxTemplate , RichText
 from import_export import resources
+from import_export.admin import ImportExportActionModelAdmin
+
+from basicdata.models import CheckItem
+from basicdata.models import Product , Carbon , Genus
 from datacenter.models import DataInformation
+from examinationreport.models import Reports
 from examinationsample.models import Checks
 from examinationsample.models import Progress
 from examinationsample.models import Sample
-from examinationreport.models import Reports
-from questionnairesurvey.models import Quenstion
-from labinformation.models import ScfasIndexes
-from labinformation.models import QpcrIndexes
 from labinformation.models import BioChemicalIndexes
 from labinformation.models import ConventionalIndex
 from labinformation.models import DegradationIndexes
-from import_export.admin import ImportExportActionModelAdmin , ImportExportActionModelAdmin
-from django.contrib import messages
-import datetime
-from basicdata.models import Product , Carbon , Genus
-from django import forms
-import re
-from basicdata.models import CheckItem
-import jinja2
-from docxtpl import DocxTemplate , RichText
+from labinformation.models import QpcrIndexes
+from labinformation.models import ScfasIndexes
+from questionnairesurvey.models import Quenstion
+from basicdata.admin import SciNotation  # 科学计数法的函数
 
 admin.site.empty_value_display = '-empty-'
-
-
-def tran_format(value):
-    if value is not None:
-        if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
-            value = "%.2e" % value
-    else:
-        value = 0
-    return value
 
 
 class ChecksForm( forms.ModelForm ):
@@ -297,17 +290,57 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     exclude = ("kuoz1_testing_staff" , 'kuoz1_testing_date' , 'kuoz2_testing_staff' , 'kuoz2_testing_date')
 
     @staticmethod
+    def tran_none(value):
+        """
+        :param value:
+        :return:将None转出-
+        """
+        if value is None:
+            value = "-"  # 缺失值
+        return value
+
+    @staticmethod
+    def tran_format(value):
+        if value is not None:
+            if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
+                value = SciNotation( value , 2 )  # 保留小数点2位
+        else:
+            value = 0
+        return value
+
+    @staticmethod
+    def tran_format1(value):
+        if value is not None:
+            if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
+                value = SciNotation( value , 1 )  # 保留小数点2位
+        else:
+            value = 0
+        return value
+
+    @staticmethod
+    def tran_format3(value):
+        if value is not None:
+            if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
+                value = SciNotation( value , 3 )  # 保留小数点2位
+        else:
+            value = 0
+        return value
+
+    @staticmethod
     def pos_value_display(value):
         pos_nag = {
             0: "阴性（-）" ,
             1: "阳性（+）"}
-        if type( value ) is str:
-            pos_nag_str = {
-                "0": "阴性（-）" ,
-                "1": "阳性（+）"}
-            value = pos_nag_str.get( value )
+        if value is not None:
+            value = int(value)
+            if value == 1:
+                rt = RichText( )
+                rt.add( pos_nag.get( value ) , color = '#DF0101' )
+                value = rt
+            else:
+                value = pos_nag.get( value )
         else:
-            value = pos_nag.get( value )
+            value = "-"  # 缺失值
         return value
 
     @staticmethod
@@ -316,7 +349,10 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             0: '女性' ,
             1: '男性' ,
         }
-        value = SEX_CHOICES.get( value )
+        if value is not None:
+            value = SEX_CHOICES.get( value )
+        else:
+            value = "-"  # 缺失值
         return value
 
     @staticmethod
@@ -324,25 +360,50 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if value is not None:
             value = format( float( value ) , '.2%' )
         else:
-            value = "0%"
+            value = "-%"  # 缺失值
         return value
 
     @staticmethod
+    def percent_value_display1(value):
+        if value is not None:
+            value = format( float( value ) , '.1%' )
+        else:
+            value = "-%"  # 缺失值
+        return value
+
+    @staticmethod
+    def percent_value_display3(value):
+        if value is not None:
+            value = format( float( value ) , '.3%' )
+        else:
+            value = "-%"  # 缺失值
+        return value
+
+    @staticmethod
+    def set_color(value , color):
+        if value is not None:
+            rt = RichText( )
+            rt.add( value , color = color )  # 自定义颜色'#DF0101'
+        return rt
+
+    @staticmethod
     def side_value_display(value):
+        """
         STATUS_CHOICES = {
             0: '↑' ,
             1: '' ,
             2: '↓' ,
         }
+        """
         if value is not None:
             if value == 0:
                 rt = RichText( )
-                rt.add('↑', color = '#DF0101' )
+                rt.add( '↑' , color = '#DF0101' )
             if value == 1:
                 rt = "-"
             if value == 2:
                 rt = RichText( )
-                rt.add('↓', color = '#ff00ff' )
+                rt.add( '↓' , color = '#ff00ff' )
         else:
             rt = "缺失"
         return rt
@@ -456,10 +517,15 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 data.update( {'receive_sample_date': str( datetime.date.today( ) )} )
                 data.update( {'report_testing_date': str( datetime.date.today( ) )} )
                 jinja_env = jinja2.Environment( )
-                jinja_env.filters ["tran"] = tran_format
+                jinja_env.filters ["red"] = self.set_red
+                jinja_env.filters ["tran"] = self.tran_format
+                jinja_env.filters ["tran1"] = self.tran_format1
+                jinja_env.filters ["tran3"] = self.tran_format3
                 jinja_env.filters ["pos"] = self.pos_value_display
                 jinja_env.filters ["sex"] = self.sex_value_display
                 jinja_env.filters ['percent'] = self.percent_value_display
+                jinja_env.filters ['percent1'] = self.percent_value_display1
+                jinja_env.filters ['percent3'] = self.percent_value_display3
                 jinja_env.filters ['side'] = self.side_value_display
                 doc.render( data , jinja_env )
                 doc.save( 'media/' + str( filename + obj.sample_number + suffix ) )
