@@ -90,6 +90,7 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         }) ,
         ('生活习惯' , {
             'fields': (('complaint' , 'condition' ,) ,
+                       ('classification' , 'unwell' ,) ,
                        ('exhaust' , 'smoke' ,))
         }) ,
         ('疾病' , {

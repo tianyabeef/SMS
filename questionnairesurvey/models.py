@@ -36,7 +36,9 @@ class Quenstion( models.Model ):
     email = models.EmailField( verbose_name = "邮箱" )
     complaint = models.CharField( verbose_name = '主诉' , max_length = 255 , null = True , blank = True )
     condition = models.CharField( verbose_name = '近1个月排便情况' , max_length = 255 , null = True , blank = True )
-    exhaust = models.CharField( verbose_name = '近1个月排气情况' , max_length = 255 , null = True , blank = True )
+    exhaust = models.CharField( verbose_name = '近1个月大便频次' , max_length = 255 , null = True , blank = True )
+    classification = models.CharField( verbose_name = '自评布里斯托分级' , max_length = 255 , null = True , blank = True )
+    unwell = models.CharField( verbose_name = '近1个月胃肠道不适症状' , max_length = 255 , null = True , blank = True )
     smoke = models.CharField( verbose_name = '吸烟饮酒' , max_length = 255 , null = True , blank = True )
     antibiotic_consumption = models.CharField( verbose_name = '近1个月抗生素食用' , max_length = 255 , null = True ,
                                                blank = True )
