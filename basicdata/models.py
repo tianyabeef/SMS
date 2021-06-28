@@ -23,7 +23,7 @@ class CTformula( models.Model ):
     formula_name = models.CharField( verbose_name = '公式名称' , max_length = 255 , blank = True , null = True )
     formula_content = models.CharField( verbose_name = '计算公式' , max_length = 255 )
     tax_name = models.CharField( verbose_name = '菌种名称' , max_length = 255 )
-    version_num = models.IntegerField( verbose_name = '版本号' )
+    version_num = models.IntegerField( verbose_name = '版本号' , default = 1 )
     example_data = models.FloatField( verbose_name = "输入示例" )
     result_data = models.FloatField( verbose_name = "输出结果" )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
@@ -125,7 +125,7 @@ class ReferenceRange( models.Model ):
     index_name = models.CharField( verbose_name = '指标名称' , max_length = 255 )  # 实验结果就是通过这个字段进行匹配查询的
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE )
     tax_name = models.CharField( verbose_name = '菌种名称' , max_length = 255 )
-    version_num = models.IntegerField( verbose_name = '版本号' )
+    version_num = models.IntegerField( verbose_name = '版本号' , default = 1 )
     reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
                                         blank = True )
     layout = models.IntegerField( verbose_name = '报告显示形式' , choices = L_CHOICES , default = 0 , null = True ,
@@ -150,7 +150,7 @@ class ReferenceRange( models.Model ):
 
 class Template( models.Model ):
     product_name = models.CharField( verbose_name = '模板名称' , max_length = 100 )
-    version_num = models.IntegerField( verbose_name = '版本号' )
+    version_num = models.IntegerField( verbose_name = '版本号' , default = 1 )
     upload_time = models.DateField( verbose_name = '上传时间' , blank = True , null = True , auto_now = True )
     use_count = models.IntegerField( verbose_name = '使用次数' , default = 0 )
     file_template = models.FileField( verbose_name = '模板报告' , upload_to = "uploads/template/%Y/%m" , null = True ,
