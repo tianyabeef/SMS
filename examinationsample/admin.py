@@ -2,7 +2,7 @@ import datetime
 import json
 import os
 import re
-
+from django.db.models.query import QuerySet
 import jinja2
 from django import forms
 from django.contrib import admin
@@ -11,9 +11,9 @@ from django.core import serializers
 from docxtpl import DocxTemplate , RichText
 from import_export import resources
 from import_export.admin import ImportExportActionModelAdmin
-
-from basicdata.models import CheckItem
-from basicdata.models import Product , Carbon , Genus
+import tablib
+from basicdata.models import CheckItem , Agent
+from basicdata.models import Product , Carbon , Genus , Template
 from datacenter.models import DataInformation
 from examinationreport.models import Reports
 from examinationsample.models import Checks
@@ -91,11 +91,128 @@ class SampleResource( resources.ModelResource ):
         model = Sample
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' , 'internal_number' , 'name' , 'email' , 'receive_sample' , 'receive_sample_date' ,
+            'id' , 'sample_number' , 'internal_number' , 'name' , 'receive_sample' , 'receive_sample_date' ,
             'sample_source' , 'set_meal' , 'cost' , 'report_date' , 'report_template' , 'report_template_url' , 'note')
         export_order = (
-            'id' , 'sample_number' , 'internal_number' , 'name' , 'email' , 'receive_sample' , 'receive_sample_date' ,
+            'id' , 'sample_number' , 'internal_number' , 'name' , 'receive_sample' , 'receive_sample_date' ,
             'sample_source' , 'set_meal' , 'cost' , 'report_date' , 'report_template' , 'report_template_url' , 'note')
+
+    def get_diff_headers(self):
+        return ['id' , '样本编号' , '对内编号' , '姓名' , '收样人' , '收样日期' , '渠道来源' , '套餐编号' , '费用' , '预计报告日期' ,
+                '报告模板' , '报告模板地址' , '备注' ]
+
+    def get_export_headers(self):
+        return ['id' , '样本编号' , '对内编号' , '姓名' , '收样人' , '收样日期' , '渠道来源' , '套餐编号' , '费用' , '预计报告日期' ,
+                '报告模板' , '报告模板地址' , '备注' ]
+
+    def export(self , queryset=None , *args , **kwargs):
+        """
+                Exports a resource.
+                """
+
+        self.before_export( queryset , *args , **kwargs )
+
+        if queryset is None:
+            queryset = self.get_queryset( )
+        headers = self.get_export_headers( )
+        data = tablib.Dataset( headers = headers )
+
+        if isinstance( queryset , QuerySet ):
+            # Iterate without the queryset cache, to avoid wasting memory when
+            # exporting large datasets.
+            iterable = queryset.iterator( )
+        else:
+            iterable = queryset
+        for obj in iterable:
+            agent = Agent.objects.get( id = obj.sample_source.id)  # 导出的表格中渠道来源列填写的是根据渠道编号
+            obj.sample_source.id = agent.number
+            template = Template.objects.get( id = obj.report_template.id )
+            obj.report_template.id = template.product_name
+            data.append( self.export_resource( obj ) )
+
+        self.after_export( queryset , data , *args , **kwargs )
+
+        return data
+
+    def before_import_row(self , row , **kwargs):
+        """
+        Calls :meth:`import_export.fields.Field.save` if ``Field.attribute``
+        and ``Field.column_name`` are found in ``data``.
+        """
+        samples = Sample.objects.filter( sample_number = row ['样本编号'] )
+        agents = Agent.objects.filter( number = row ['渠道来源'] )  #导入的表格中渠道来源列填写的是根据渠道编号
+        products = Product.objects.filter( number = row ['套餐编号'] )#导入的表格中套餐编号源列填写的是根据套餐编号
+        templates = Template.objects.filter( product_name = row ['报告模板'] )
+        if (row['id'] is None) and (samples.count()>0):
+            raise  forms.ValidationError("样本编号有重复。")
+        if agents.count( ) == 0:
+            raise forms.ValidationError( '渠道来源有误，请到基础数据管理中核实。' )
+        if products.count( ) == 0:
+            raise forms.ValidationError( '套餐编号有误，请到基础数据管理中核实。' )
+        if templates.count( ) == 0:
+            raise forms.ValidationError( '报告模板名称有误，请到基础数据管理中核实。' )
+    def get_or_init_instance(self , instance_loader , row):
+        """
+        Either fetches an already existing instance or initializes a new one.
+        """
+        agent = Agent.objects.get( number = row ['渠道来源'] )  # 导入的表格中渠道来源列填写的是根据渠道编号
+        template = Template.objects.get( product_name = row ['报告模板'] )
+        instance = self.get_instance( instance_loader , row )
+        row ['sample_number'] = row ['样本编号']
+        row ['internal_number'] = row ['对内编号']
+        row ['name'] = row ['姓名']
+        row ['receive_sample'] = row ['收样人']
+        row ['receive_sample_date'] = row ['收样日期']
+        row ['sample_source'] = agent.id
+        row ['set_meal'] = row ['套餐编号']
+        row ['cost'] = row ['费用']
+        row ['report_date'] = row ['预计报告日期']
+        row ['report_template'] = template.id
+        row ['report_template_url'] = row ['报告模板地址']
+        row ['note'] = row ['备注']
+        if instance:
+            return instance , False
+        else:
+            return self.init_instance( row ) , True
+    def before_save_instance(self , instance , using_transactions , dry_run):
+        """
+            Override to add additional logic. Does nothing by default.
+        """
+        agent = Agent.objects.get( id = instance.sample_source.id )  # 导入的表格中渠道来源列填写的是根据渠道编号
+        instance.sample_source = agent
+        instance.email = agent.email
+        product = Product.objects.get( number = instance.set_meal )
+        instance.set_meal = product.number
+        template = Template.objects.get( id = instance.report_template.id )
+        instance.report_template = template
+        instance.report_template_url = template.file_template
+        if (instance.receive_sample_date is None) :
+            instance.receive_sample_date = datetime.date.today( )
+        if (instance.report_date is None):
+            instance.report_date = datetime.datetime.now( ) + datetime.timedelta( days = 1 ) #当前时间加1天
+
+    def after_save_instance(self, instance, using_transactions, dry_run):
+        # 保存样本收样的同时，保存了样本检测表，在样本检测项的表格中没有数据，则表明时第一次创建
+        if Checks.objects.filter(sample_number  = instance ).count( ) == 0:
+            products = Product.objects.filter( number = instance.set_meal )
+            if products.count( ) == 1:
+                numbers = re.split( '[；;]' , products [0].check_content )
+                for number in numbers:
+                    check_item = CheckItem.objects.filter( number = number )
+                    Checks.objects.get_or_create( check_number = check_item [0].number ,
+                                                  check_name = check_item [0].check_name ,
+                                                  sample_number_id = instance.id )
+                # 对样本第一次收样时，在样本进度表中保存收样时间
+                obj_progress , created = Progress.objects.get_or_create( sample_number = instance.sample_number ,
+                                                                         internal_number = instance.internal_number )
+                obj_progress.receive_sample_date = instance.receive_sample_date  # 为避免报错，先找到数据，在赋值。
+                obj_progress.save( )
+            else:
+                raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
+        else:
+            raise forms.ValidationError("样本的检查项已经存在，请删除检查项")
+
+
 
 
 @admin.register( Sample )
@@ -109,7 +226,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ("sample_source" , 'is_status')
-    search_fields = ('sample_number' ,)
+    search_fields = ('sample_number' ,'internal_number' ,)
     resource_class = SampleResource
     form = SampleForm
     # list_editable = ('internal_number' ,)
@@ -241,25 +358,27 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = obj.historys + "\n" + "编号:" + obj.sample_number + ";对内编号:" \
                            + obj.internal_number + ";姓名:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
         obj.receive_sample = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
-        obj.save( )
-        # 保存样本收样的同时，保存了样本检测表，再样本检测项的表格中没有数据，则表明时第一次创建
-        if Checks.objects.filter( id = obj.id ).count( ) == 0:
-            products = Product.objects.filter( number = obj.set_meal )
-            if products.count( ) == 1:
-                numbers = re.split( '[；;]' , products [0].check_content )
-                for number in numbers:
-                    check_item = CheckItem.objects.filter( number = number )
-                    Checks.objects.get_or_create( check_number = check_item [0].number ,
-                                                  check_name = check_item [0].check_name ,
-                                                  sample_number_id = obj.id )
-                # 对样本第一次收样时，在样本进度表中保存收样时间
-                obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number ,
-                                                                         internal_number = obj.internal_number )
-                obj_progress.receive_sample_date = obj.receive_sample_date  # 为避免报错，先找到数据，在赋值。
-                obj_progress.save( )
-            else:
-                raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
+        obj.email = obj.sample_source.email
 
+        if obj is None:
+            # 保存样本收样的同时，保存了样本检测表，在样本检测项的表格中没有数据，则表明时第一次创建
+            if Checks.objects.filter( sample_number = obj ).count( ) == 0:
+                products = Product.objects.filter( number = obj.set_meal )
+                if products.count( ) == 1:
+                    numbers = re.split( '[；;]' , products [0].check_content )
+                    for number in numbers:
+                        check_item = CheckItem.objects.filter( number = number )
+                        Checks.objects.get_or_create( check_number = check_item [0].number ,
+                                                      check_name = check_item [0].check_name ,
+                                                      sample_number_id = obj.id )
+                    # 对样本第一次收样时，在样本进度表中保存收样时间
+                    obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number ,
+                                                                             internal_number = obj.internal_number )
+                    obj_progress.receive_sample_date = obj.receive_sample_date  # 为避免报错，先找到数据，在赋值。
+                    obj_progress.save( )
+                else:
+                    raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
+        obj.save( )
 
 class ProgressResource( resources.ModelResource ):
     class Meta:

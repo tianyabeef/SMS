@@ -87,10 +87,12 @@ class CTformulaForm( forms.ModelForm ):
                     "系统计算预期与输出结果不一致，请检查输出结果。系统的结果是%s" % round( float( formula( point ) ) , 10 ) )
 
         return cleaned_data
+
     def clean_tax_name(self):
-        if Genus.objects.filter( china_name = self.cleaned_data["tax_name"] ).count( ) == 0:
+        if Genus.objects.filter( china_name = self.cleaned_data ["tax_name"] ).count( ) == 0:
             raise forms.ValidationError( "菌种名称在基础数据管理中无法查询到" )
         return self.cleaned_data ["tax_name"]
+
 
 class CTformulaResource( resources.ModelResource ):
     class Meta:
@@ -102,6 +104,7 @@ class CTformulaResource( resources.ModelResource ):
         export_order = (
             'id' , 'number' , 'formula_group' , 'formula_content' , 'formula_name' , 'tax_name' , 'version_num' ,
             'example_data' , 'result_data' , 'historys' , 'writer' , 'note')
+
     def before_import_row(self , row , **kwargs):
         """
         Calls :meth:`import_export.fields.Field.save` if ``Field.attribute``
@@ -151,9 +154,11 @@ class CTformulaAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def save_model(self , request , obj , form , change):
         obj.formula_name = obj.formula_group.name
         if obj.historys is None:
-            obj.historys = "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + str(obj.version_num) + ";时间:" + datetime.date.today( ).__str__( )
+            obj.historys = "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + str(
+                obj.version_num ) + ";时间:" + datetime.date.today( ).__str__( )
         else:
-            obj.historys = obj.historys + "\n" + "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + str(obj.version_num) + ";时间:" + obj.create_date.__str__( )
+            obj.historys = obj.historys + "\n" + "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + str(
+                obj.version_num ) + ";时间:" + obj.create_date.__str__( )
         obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
@@ -163,16 +168,18 @@ class AgentResource( resources.ModelResource ):
         model = Agent
         skip_unchanged = True
         fields = (
-            'id' , 'number' , 'name' , 'responsible_user' , 'phone' , 'area' , 'create_date' , 'historys' , 'writer' ,
+            'id' , 'number' , 'name' , 'responsible_user' , 'phone' , 'email' , 'area' , 'create_date' , 'historys' ,
+            'writer' ,
             'note')
         export_order = (
-            'id' , 'number' , 'name' , 'responsible_user' , 'phone' , 'area' , 'create_date' , 'historys' , 'writer' ,
+            'id' , 'number' , 'name' , 'responsible_user' , 'phone' , 'email' , 'area' , 'create_date' , 'historys' ,
+            'writer' ,
             'note')
 
 
 @admin.register( Agent )
 class AgentAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('number' , 'name' , 'responsible_user' , 'phone' , 'area' , 'create_date')
+    list_display = ('number' , 'name' , 'responsible_user' , 'phone' , 'email' , 'area' , 'create_date')
     list_display_links = ('number' ,)
     readonly_fields = ('historys' ,)
     ordering = ('-create_date' ,)
@@ -180,7 +187,7 @@ class AgentAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ('area' ,)
-    search_fields = ('number' ,)
+    search_fields = ('number' , 'name' , 'responsible_user')
     resource_class = AgentResource
 
     # form
@@ -283,7 +290,7 @@ class ProductAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     # list_filter =
-    search_fields = ("number" ,)
+    search_fields = ("number" , 'name')
     resource_class = ProductResource
     form = ProductForm
 
@@ -416,11 +423,13 @@ class ReferenceRangeResource( resources.ModelResource ):
         model = ReferenceRange
         skip_unchanged = True
         fields = (
-            'id' , 'index_name' , 'carbon_source' , 'tax_name' , 'version_num','max_value' , 'min_value' , 'point' , 'layout' ,
+            'id' , 'index_name' , 'carbon_source' , 'tax_name' , 'version_num' , 'max_value' , 'min_value' , 'point' ,
+            'layout' ,
             'reference_range' , 'create_date' ,
             'historys' , 'writer' , 'note')
         export_order = (
-            'id' , 'index_name' , 'carbon_source' , 'tax_name' ,'version_num', 'max_value' , 'min_value' , 'point' , 'layout' ,
+            'id' , 'index_name' , 'carbon_source' , 'tax_name' , 'version_num' , 'max_value' , 'min_value' , 'point' ,
+            'layout' ,
             'reference_range' , 'create_date' ,
             'historys' , 'writer' , 'note')
 
@@ -540,10 +549,11 @@ class TemplateAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def save_model(self , request , obj , form , change):
         if obj.historys is None:
-            obj.historys = "编号:" + obj.product_name + ";版本:" + str(obj.version_num) + ";模板:" + str(
+            obj.historys = "编号:" + obj.product_name + ";版本:" + str( obj.version_num ) + ";模板:" + str(
                 obj.file_template ) + ";时间:" + datetime.date.today( ).__str__( )
         else:
-            obj.historys = obj.historys + "\n" + "编号:" + obj.product_name + ";版本:" + str(obj.version_num) + ";模板:" + str(
+            obj.historys = obj.historys + "\n" + "编号:" + obj.product_name + ";版本:" + str(
+                obj.version_num ) + ";模板:" + str(
                 obj.file_template ) + ";时间:" + datetime.date.today( ).__str__( )
         obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
@@ -644,15 +654,15 @@ class CheckItemResource( resources.ModelResource ):
 
 @admin.register( CheckItem )
 class CheckItemAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id' , 'number' , 'check_name' , 'create_date')
-    list_display_links = ('check_name' ,)
+    list_display = ('id' , 'number' , 'check_name' ,'type','carbon_source','genus', 'create_date')
+    list_display_links = ('check_name' ,'number')
     readonly_fields = ('historys' ,)
     ordering = ('-create_date' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    # list_filter =
-    search_fields = ('check_name' ,)
+    list_filter =['type' , ]
+    search_fields = ('check_name' ,'number')
     resource_class = CheckItemResource
 
     form = CheckItemForm

@@ -21,14 +21,15 @@ class QuenstionForm( forms.ModelForm ):
                                 required = True , widget = forms.TextInput(
             attrs = {'class': 'vTextField , form-control' , 'placeholder': '示例：江浙沪'} ) ,
                                 error_messages = {'required': '这个字段是必填项。'} )
-    weight = forms.CharField( label = "体重" , help_text = "单位：千克" ,required = True ,
-                                 widget = forms.NumberInput(
-            attrs = {'class': ' form-control' , 'placeholder': '示例：60.01'} ) ,
-                                error_messages = {'required': '单位：千克'} )
-    height = forms.CharField( label = "身高" , help_text = "单位：米" ,required = True ,
+    weight = forms.CharField( label = "体重" , help_text = "单位：千克" , required = True ,
+                              widget = forms.NumberInput(
+                                  attrs = {'class': ' form-control' , 'placeholder': '示例：60.01'} ) ,
+                              error_messages = {'required': '单位：千克'} )
+    height = forms.CharField( label = "身高" , help_text = "单位：米" , required = True ,
                               widget = forms.NumberInput(
                                   attrs = {'class': ' form-control' , 'placeholder': '示例：1.68'} ) ,
                               error_messages = {'required': '单位：米'} )
+
     class Meta:
         model = Quenstion
         exclude = ("" ,)
@@ -50,13 +51,13 @@ class QuenstionResource( resources.ModelResource ):
         skip_unchanged = True
 
         fields = (
-            'id' , 'sample_number' ,'carbon_source' ,'genus', 'name' , 'gender' , 'age' , 'height' , 'weight' ,
+            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'name' , 'gender' , 'age' , 'height' , 'weight' ,
             'waistline' , 'bmi_value' , 'phone' , 'email' , 'complaint' , 'condition' , 'exhaust' , 'smoke' ,
             'antibiotic_consumption' , 'probiotic_supplements' ,
             'prebiotics_supplement' , 'dietary_habit' , 'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' ,
             'hdl' , 'blood_glucose' , 'trioxypurine' , 'is_status')
         export_order = (
-            'id' , 'sample_number' ,'carbon_source' ,'genus', 'name' , 'gender' , 'age' , 'height' , 'weight' ,
+            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'name' , 'gender' , 'age' , 'height' , 'weight' ,
             'waistline' , 'bmi_value' , 'phone' , 'email' , 'complaint' , 'condition' , 'exhaust' , 'smoke' ,
             'antibiotic_consumption' , 'probiotic_supplements' ,
             'prebiotics_supplement' , 'dietary_habit' , 'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' ,
@@ -73,8 +74,8 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    list_filter = ('gender' ,)
-    search_fields = ('sample_number' ,)
+    list_filter = ('gender' , 'age_sgement' , 'province')
+    search_fields = ('sample_number' , 'name')
     resource_class = QuenstionResource
     form = QuenstionForm
     # list_editable =
@@ -82,7 +83,7 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     fieldsets = (
         ('基本信息' , {
-            'fields': (('sample_number' ,'carbon_source' ,'genus',) ,
+            'fields': (('sample_number' , 'carbon_source' , 'genus' ,) ,
                        ('name' , 'gender' , 'age') ,
                        ('age_sgement' , 'province' ,) ,
                        ('height' , 'weight' , 'waistline' , 'bmi_value' ,) ,
@@ -105,7 +106,7 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def get_readonly_fields(self , request , obj=None):
         # 根据 obj 是否为空来判断,修改数据时不能修改样本编号，
         if obj:
-            self.readonly_fields = ('sample_number' , 'carbon_source' ,'genus','bmi_value')
+            self.readonly_fields = ('sample_number' , 'carbon_source' , 'genus' , 'bmi_value')
         else:
             self.readonly_fields = ('bmi_value' ,)
         # if request.user.is_superuser:  # TODO 上线时打开

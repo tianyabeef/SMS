@@ -63,6 +63,7 @@ class Agent( models.Model ):
     name = models.CharField( verbose_name = '渠道名称' , max_length = 255 , null = True , blank = True )
     responsible_user = models.ForeignKey( User , verbose_name = '负责人姓名' , on_delete = models.CASCADE )
     phone = PhoneNumberField( verbose_name = '联系电话' , null = True , blank = True , help_text = 'Contact phone number' )
+    email = models.EmailField( verbose_name = '邮箱' )
     area = models.CharField( verbose_name = '负责区域' , max_length = 255 , default = '' , null = True , blank = True )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now = True )
     historys = models.TextField( verbose_name = "历史填写日期" , blank = True , null = True )
