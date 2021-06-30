@@ -194,17 +194,17 @@ class AgentAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     # list_editable =
     # actions =
 
-    def get_changeform_initial_data(self , request):
-        initial = super( ).get_changeform_initial_data( request )
-        initial ['writer'] = request.user.last_name + ' ' + request.user.first_name
-        return initial
+    # def get_changeform_initial_data(self , request):
+    #     initial = super( ).get_changeform_initial_data( request )
+    #     # initial ['writer'] = request.user.last_name + ' ' + request.user.first_name
+    #     return initial
 
     def save_model(self , request , obj , form , change):
         if obj.historys is None:
             obj.historys = "编号:" + obj.number + ";名称:" + obj.name + ";负责人:" + obj.responsible_user.last_name + ";时间:" + datetime.date.today( ).__str__( )
         else:
             obj.historys = obj.historys + "\n" + "编号:" + obj.number + ";名称:" + obj.name + ";负责人:" + obj.responsible_user.last_name + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 

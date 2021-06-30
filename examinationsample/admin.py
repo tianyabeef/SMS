@@ -99,11 +99,11 @@ class SampleResource( resources.ModelResource ):
 
     def get_diff_headers(self):
         return ['id' , '样本编号' , '对内编号' , '姓名' , '收样人' , '收样日期' , '渠道来源' , '套餐编号' , '费用' , '预计报告日期' ,
-                '报告模板' , '报告模板地址' , '备注' ]
+                '报告模板' , '报告模板地址' , '备注']
 
     def get_export_headers(self):
         return ['id' , '样本编号' , '对内编号' , '姓名' , '收样人' , '收样日期' , '渠道来源' , '套餐编号' , '费用' , '预计报告日期' ,
-                '报告模板' , '报告模板地址' , '备注' ]
+                '报告模板' , '报告模板地址' , '备注']
 
     def export(self , queryset=None , *args , **kwargs):
         """
@@ -124,7 +124,7 @@ class SampleResource( resources.ModelResource ):
         else:
             iterable = queryset
         for obj in iterable:
-            agent = Agent.objects.get( id = obj.sample_source.id)  # 导出的表格中渠道来源列填写的是根据渠道编号
+            agent = Agent.objects.get( id = obj.sample_source.id )  # 导出的表格中渠道来源列填写的是根据渠道编号
             obj.sample_source.id = agent.number
             template = Template.objects.get( id = obj.report_template.id )
             obj.report_template.id = template.product_name
@@ -140,17 +140,18 @@ class SampleResource( resources.ModelResource ):
         and ``Field.column_name`` are found in ``data``.
         """
         samples = Sample.objects.filter( sample_number = row ['样本编号'] )
-        agents = Agent.objects.filter( number = row ['渠道来源'] )  #导入的表格中渠道来源列填写的是根据渠道编号
-        products = Product.objects.filter( number = row ['套餐编号'] )#导入的表格中套餐编号源列填写的是根据套餐编号
+        agents = Agent.objects.filter( number = row ['渠道来源'] )  # 导入的表格中渠道来源列填写的是根据渠道编号
+        products = Product.objects.filter( number = row ['套餐编号'] )  # 导入的表格中套餐编号源列填写的是根据套餐编号
         templates = Template.objects.filter( product_name = row ['报告模板'] )
-        if (row['id'] is None) and (samples.count()>0):
-            raise  forms.ValidationError("样本编号有重复。")
+        if (row ['id'] is None) and (samples.count( ) > 0):
+            raise forms.ValidationError( "样本编号有重复。" )
         if agents.count( ) == 0:
             raise forms.ValidationError( '渠道来源有误，请到基础数据管理中核实。' )
         if products.count( ) == 0:
             raise forms.ValidationError( '套餐编号有误，请到基础数据管理中核实。' )
         if templates.count( ) == 0:
             raise forms.ValidationError( '报告模板名称有误，请到基础数据管理中核实。' )
+
     def get_or_init_instance(self , instance_loader , row):
         """
         Either fetches an already existing instance or initializes a new one.
@@ -174,6 +175,7 @@ class SampleResource( resources.ModelResource ):
             return instance , False
         else:
             return self.init_instance( row ) , True
+
     def before_save_instance(self , instance , using_transactions , dry_run):
         """
             Override to add additional logic. Does nothing by default.
@@ -186,14 +188,14 @@ class SampleResource( resources.ModelResource ):
         template = Template.objects.get( id = instance.report_template.id )
         instance.report_template = template
         instance.report_template_url = template.file_template
-        if (instance.receive_sample_date is None) :
+        if (instance.receive_sample_date is None):
             instance.receive_sample_date = datetime.date.today( )
         if (instance.report_date is None):
-            instance.report_date = datetime.datetime.now( ) + datetime.timedelta( days = 1 ) #当前时间加1天
+            instance.report_date = datetime.datetime.now( ) + datetime.timedelta( days = 1 )  # 当前时间加1天
 
-    def after_save_instance(self, instance, using_transactions, dry_run):
+    def after_save_instance(self , instance , using_transactions , dry_run):
         # 保存样本收样的同时，保存了样本检测表，在样本检测项的表格中没有数据，则表明时第一次创建
-        if Checks.objects.filter(sample_number  = instance ).count( ) == 0:
+        if Checks.objects.filter( sample_number = instance ).count( ) == 0:
             products = Product.objects.filter( number = instance.set_meal )
             if products.count( ) == 1:
                 numbers = re.split( '[；;]' , products [0].check_content )
@@ -210,15 +212,14 @@ class SampleResource( resources.ModelResource ):
             else:
                 raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
         else:
-            raise forms.ValidationError("样本的检查项已经存在，请删除检查项")
-
-
+            raise forms.ValidationError( "样本的检查项已经存在，请删除检查项" )
 
 
 @admin.register( Sample )
 class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-        "sample_number" , 'internal_number' , 'receive_sample_date' , 'receive_sample' , 'is_wjxx' , 'report_date' ,
+        "sample_number" , 'internal_number' , 'name' , 'receive_sample' , 'receive_sample_date' , 'sample_source' ,
+        'product_name' , 'report_template' ,
         'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ("-sample_number" ,)
@@ -226,7 +227,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ("sample_source" , 'is_status')
-    search_fields = ('sample_number' ,'internal_number' ,)
+    search_fields = ('sample_number' , 'internal_number' ,)
     resource_class = SampleResource
     form = SampleForm
     # list_editable = ('internal_number' ,)
@@ -254,12 +255,6 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         return product [0].name if product else ""
 
     product_name.short_description = "套餐名称"
-
-    def is_wjxx(self , obj):
-        check_wjxx = Checks.objects.filter( sample_number = obj )
-        return check_wjxx [0].finish_date if check_wjxx else ""
-
-    is_wjxx.short_description = "问卷完成时间"
 
     # '''自定义actions'''
     # def get_actions(self , request):
@@ -380,6 +375,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
         obj.save( )
 
+
 class ProgressResource( resources.ModelResource ):
     class Meta:
         model = Progress
@@ -409,6 +405,19 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     exclude = ("kuoz1_testing_staff" , 'kuoz1_testing_date' , 'kuoz2_testing_staff' , 'kuoz2_testing_date')
 
     @staticmethod
+    def point_format(num , point=2):
+        """
+        :param value:
+        :return:保留小时点位数
+        """
+        if num is None:
+            value = "-"
+        else:
+            rule = "{0:.%sf}" % point
+            value = rule.format( float(num ))
+        return value
+
+    @staticmethod
     def tran_none(value):
         """
         :param value:
@@ -423,6 +432,9 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if value is not None:
             if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
                 value = SciNotation( value , 2 )  # 保留小数点2位
+            else:
+                rule = "{0:.%sf}" % 2
+                value = rule.format( float( value ) )
         else:
             value = 0
         return value
@@ -431,7 +443,10 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def tran_format1(value):
         if value is not None:
             if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
-                value = SciNotation( value , 1 )  # 保留小数点2位
+                value = SciNotation( value , 1 )  # 保留小数点1位
+            else:
+                rule = "{0:.%sf}" % 1
+                value = rule.format( float( value ) )
         else:
             value = 0
         return value
@@ -440,7 +455,10 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def tran_format3(value):
         if value is not None:
             if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
-                value = SciNotation( value , 3 )  # 保留小数点2位
+                value = SciNotation( value , 3 )  # 保留小数点3位
+            else:
+                rule = "{0:.%sf}" % 3
+                value = rule.format( float( value ) )
         else:
             value = 0
         return value
@@ -451,8 +469,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             0: "阴性（-）" ,
             1: "阳性（+）"}
         if value is not None:
-            value = int(value)
-            if value == 1:
+            if value == 1 or (value is "1"):
                 rt = RichText( )
                 rt.add( pos_nag.get( value ) , color = '#DF0101' )
                 value = rt
@@ -636,7 +653,9 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 data.update( {'receive_sample_date': str( datetime.date.today( ) )} )
                 data.update( {'report_testing_date': str( datetime.date.today( ) )} )
                 jinja_env = jinja2.Environment( )
-                jinja_env.filters ["red"] = self.set_red
+                jinja_env.filters ["point"] = self.point_format
+                jinja_env.filters ["trannone"] = self.tran_none
+                jinja_env.filters ["color"] = self.set_color
                 jinja_env.filters ["tran"] = self.tran_format
                 jinja_env.filters ["tran1"] = self.tran_format1
                 jinja_env.filters ["tran3"] = self.tran_format3

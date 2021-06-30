@@ -908,8 +908,25 @@ class ScfasIndexesResource( resources.ModelResource ):
 
         if (instance.isobutyric_acid is not None) and (instance.valeric is not None) and (
                 instance.isovaleric is not None):
-            instance.acid_second = (
-                                           instance.isobutyric_acid + instance.valeric + instance.isovaleric) / instance.total_acid
+            instance.acid_second = (instance.isobutyric_acid + instance.valeric + instance.isovaleric) / instance.total_acid
+
+        if instance.acetic_acid is not None:
+            instance.acetic_acid_ratio = instance.acetic_acid / instance.total_acid
+
+        if instance.propionic is not None:
+            instance.propionic_ratio = instance.propionic / instance.total_acid
+
+        if instance.butyric is not None:
+            instance.butyric_ratio = instance.butyric / instance.total_acid
+
+        if instance.isobutyric_acid is not None:
+            instance.isobutyric_acid_ratio = instance.isobutyric_acid / instance.total_acid
+
+        if instance.valeric is not None:
+            instance.valeric_ratio = instance.valeric / instance.total_acid
+
+        if instance.isovaleric is not None:
+            instance.isovaleric_ratio = instance.isovaleric / instance.total_acid
 
         if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                 'total_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
