@@ -268,7 +268,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 "sample_number" , 'internal_number' , 'historys' , 'receive_sample' , 'product_name' ,
                 'report_template_url' , 'is_status')
         else:
-            self.readonly_fields = ('historys' , 'product_name' , 'report_template_url' , 'is_status')
+            self.readonly_fields = ('historys' , 'product_name' , 'report_template_url' , 'is_status','email')
         # if request.user.is_superuser: TODO 正式上线时放开注释
         #     self.readonly_fields = ( 'product_name',)
         return self.readonly_fields
@@ -352,10 +352,10 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         else:
             obj.historys = obj.historys + "\n" + "编号:" + obj.sample_number + ";对内编号:" \
                            + obj.internal_number + ";姓名:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
-        obj.receive_sample = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.receive_sample = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.email = obj.sample_source.email
-
-        if obj is None:
+        obj.save( )
+        if not change:  # 新增
             # 保存样本收样的同时，保存了样本检测表，在样本检测项的表格中没有数据，则表明时第一次创建
             if Checks.objects.filter( sample_number = obj ).count( ) == 0:
                 products = Product.objects.filter( number = obj.set_meal )
@@ -373,7 +373,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     obj_progress.save( )
                 else:
                     raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
-        obj.save( )
+
 
 
 class ProgressResource( resources.ModelResource ):
@@ -704,5 +704,5 @@ class ChecksAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         return initial
 
     def save_model(self , request , obj , form , change):
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )

@@ -159,7 +159,7 @@ class CTformulaAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         else:
             obj.historys = obj.historys + "\n" + "编号:" + obj.number + ";公式:" + obj.formula_content + ";版本:" + str(
                 obj.version_num ) + ";时间:" + obj.create_date.__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 
@@ -245,7 +245,7 @@ class GenusAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         else:
             obj.historys = obj.historys + "\n" + "编号:" + str(
                 obj.taxid ) + ";中文名称:" + obj.china_name + ";英文名称:" + obj.english_name + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 
@@ -309,7 +309,7 @@ class ProductAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         else:
             obj.historys = obj.historys + "\n" + "编号:" + obj.number + ";名称:" + obj.name + ";价格:" + str(
                 obj.price ) + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 
@@ -348,7 +348,7 @@ class CarbonAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = "编号:" + obj.cid + ";名称:" + obj.name + ";配比:" + obj.ratio + ";时间:" + datetime.date.today( ).__str__( )
         else:
             obj.historys = obj.historys + "\n" + "编号:" + obj.cid + ";名称:" + obj.name + ";配比:" + obj.ratio + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 
@@ -506,7 +506,7 @@ class ReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         else:
             obj.historys = obj.historys + "\n" + "编号:" + obj.index_name + ";碳源:" + obj.carbon_source.name + ";菌种:" + obj.tax_name + ";最小:" + str(
                 obj.min_value ) + ";最大:" + str( obj.max_value ) + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         if (obj.max_value is not None) and (obj.min_value is not None):
             obj.reference_range = get_reference_range( obj.min_value , obj.max_value , obj.layout , obj.point )
         obj.save( )
@@ -555,7 +555,7 @@ class TemplateAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = obj.historys + "\n" + "编号:" + obj.product_name + ";版本:" + str(
                 obj.version_num ) + ";模板:" + str(
                 obj.file_template ) + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 
@@ -601,7 +601,7 @@ class CheckTypeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = "检测编号:" + obj.number + ":检测大类:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
         else:
             obj.historys = obj.historys + "\n" + "检测编号:" + obj.number + ":检测大类:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 
@@ -680,7 +680,7 @@ class CheckItemAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = "检测编号:" + obj.number + ":检测名称:" + obj.check_name + ";时间:" + datetime.date.today( ).__str__( )
         else:
             obj.historys = obj.historys + "\n" + "检测编号:" + obj.number + ":检测名称:" + obj.check_name + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 
@@ -719,7 +719,7 @@ class AgeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = "年龄分段:" + obj.name + ":年龄范围:" + obj.age_range + ";时间:" + datetime.date.today( ).__str__( )
         else:
             obj.historys = obj.historys + "\n" + "年龄分段:" + obj.name + ":年龄范围:" + obj.age_range + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
 
 
@@ -758,5 +758,5 @@ class ProvinceAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = "地域:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
         else:
             obj.historys = obj.historys + "\n" + "地域:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
-        obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )

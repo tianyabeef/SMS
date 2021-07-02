@@ -19,7 +19,7 @@ class Sample( models.Model ):
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 , unique = True )
     internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 , unique = True )
     name = models.CharField( verbose_name = '姓名' , max_length = 255 )
-    email = models.EmailField( verbose_name = '邮箱' )
+    email = models.EmailField( verbose_name = '邮箱' ,blank = True)
     receive_sample = models.CharField( verbose_name = '收样人' , max_length = 255 )
     receive_sample_date = models.DateField( verbose_name = '收样日期' , auto_now_add = True , blank = True , null = True )
     sample_source = models.ForeignKey( Agent , verbose_name = '渠道来源' , on_delete = models.CASCADE )
