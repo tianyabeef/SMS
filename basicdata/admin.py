@@ -11,9 +11,11 @@ from basicdata.models import ReferenceRange
 from basicdata.models import Template
 import datetime
 import re
+import tablib
 from formula import Solver
 from basicdata.models import FormulaGroup
 from import_export.admin import ImportExportActionModelAdmin
+from django.db.models.query import QuerySet
 
 admin.site.empty_value_display = '-empty-'
 
@@ -100,10 +102,10 @@ class CTformulaResource( resources.ModelResource ):
         skip_unchanged = True
         fields = (
             'id' , 'number' , 'formula_group' , 'formula_name' , 'formula_content' , 'tax_name' , 'version_num' ,
-            'example_data' , 'result_data' , 'historys' , 'writer' , 'note')
+            'example_data' , 'result_data' , 'writer' , 'note')
         export_order = (
             'id' , 'number' , 'formula_group' , 'formula_content' , 'formula_name' , 'tax_name' , 'version_num' ,
-            'example_data' , 'result_data' , 'historys' , 'writer' , 'note')
+            'example_data' , 'result_data' , 'writer' , 'note')
 
     def before_import_row(self , row , **kwargs):
         """
@@ -168,11 +170,11 @@ class AgentResource( resources.ModelResource ):
         model = Agent
         skip_unchanged = True
         fields = (
-            'id' , 'number' , 'name' , 'responsible_user' , 'phone' , 'email' , 'area' , 'create_date' , 'historys' ,
+            'id' , 'number' , 'name' , 'responsible_user' , 'phone' , 'email' , 'area' , 'create_date' ,
             'writer' ,
             'note')
         export_order = (
-            'id' , 'number' , 'name' , 'responsible_user' , 'phone' , 'email' , 'area' , 'create_date' , 'historys' ,
+            'id' , 'number' , 'name' , 'responsible_user' , 'phone' , 'email' , 'area' , 'create_date' ,
             'writer' ,
             'note')
 
@@ -226,7 +228,7 @@ class GenusAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     # list_filter =
-    search_fields = ('china_name' ,)
+    search_fields = ('china_name' , 'english_name')
     resource_class = GenusResource
 
     # form = CarbonForm
@@ -253,8 +255,76 @@ class ProductResource( resources.ModelResource ):
     class Meta:
         model = Product
         skip_unchanged = True
-        fields = ('id' , 'number' , 'name' , 'price' , 'create_date' , 'historys' , 'writer' , 'note')
-        export_order = ('id' , 'number' , 'name' , 'price' , 'create_date' , 'historys' , 'writer' , 'note')
+        fields = ('id' , 'number' , 'name' , 'price' , 'check_content' , 'create_date' , 'writer' , 'note')
+        export_order = ('id' , 'number' , 'name' , 'price' , 'check_content' , 'create_date' , 'writer' , 'note')
+
+    def get_diff_headers(self):
+        return ['id' , '套餐编号' , '套餐名称' , '套餐价格' , '检测模块' , '创建时间' , '创建人' , '备注']
+
+    def get_export_headers(self):
+        return ['id' , '套餐编号' , '套餐名称' , '套餐价格' , '检测模块' , '创建时间' , '创建人' , '备注']
+
+    def export(self , queryset=None , *args , **kwargs):
+        """
+                Exports a resource.
+                """
+        self.before_export( queryset , *args , **kwargs )
+        if queryset is None:
+            queryset = self.get_queryset( )
+        headers = self.get_export_headers( )
+        data = tablib.Dataset( headers = headers )
+        if isinstance( queryset , QuerySet ):
+            # Iterate without the queryset cache, to avoid wasting memory when
+            # exporting large datasets.
+            iterable = queryset.iterator( )
+        else:
+            iterable = queryset
+        for obj in iterable:
+            tmp_list = [CheckItem.objects.get( number = cc ).check_name for cc in
+                        re.split( '[；;]' , obj.check_content.strip( ) )]
+            checkItem_check_name = ";".join( tmp_list )
+            obj.check_content = checkItem_check_name
+            data.append( self.export_resource( obj ) )
+        self.after_export( queryset , data , *args , **kwargs )
+        return data
+
+    def before_import_row(self , row , **kwargs):
+        """
+        Calls :meth:`import_export.fields.Field.save` if ``Field.attribute``
+        and ``Field.column_name`` are found in ``data``.
+        """
+        for cn in re.split( '[；;]' , row ['检测模块'].strip( ) ):
+            if CheckItem.objects.filter( check_name = cn ).count( ) == 0:
+                raise forms.ValidationError( '检测模块名称不对，请到基础数据管理中核实。' )
+        products = Product.objects.filter( number = row ['套餐编号'] )  # 导入的表格中套餐编号列填写的是根据套餐编号
+        if (row ['id'] is None) and (products.count( ) > 0):
+            raise forms.ValidationError( "套餐编号有重复。" )
+
+    def get_or_init_instance(self , instance_loader , row):
+        """
+        Either fetches an already existing instance or initializes a new one.
+        """
+        instance = self.get_instance( instance_loader , row )
+        row ['number'] = row ['套餐编号']
+        row ['name'] = row ['套餐名称']
+        row ['price'] = row ['套餐价格']
+        row ['check_content'] = row ['检测模块']
+        row ['create_date'] = row ['创建时间']
+        row ['writer'] = row ['创建人']
+        row ['note'] = row ['备注']
+        if instance:
+            return instance , False
+        else:
+            return self.init_instance( row ) , True
+
+    def before_save_instance(self , instance , using_transactions , dry_run):
+        """
+            Override to add additional logic. Does nothing by default.
+        """
+        tmp_list = [CheckItem.objects.get( check_name = cc ).number for cc in
+                    re.split( '[；;]' , instance.check_content.strip( ) )]
+        checkItem_check_name = ";".join( tmp_list )
+        instance.check_content = checkItem_check_name
 
 
 class ProductForm( forms.ModelForm ):
@@ -317,8 +387,8 @@ class CarbonResource( resources.ModelResource ):
     class Meta:
         model = Carbon
         skip_unchanged = True
-        fields = ('id' , 'cid' , 'name' , 'ratio' , 'create_date' , 'historys' , 'writer' , 'note')
-        export_order = ('id' , 'cid' , 'name' , 'ratio' , 'create_date' , 'historys' , 'writer' , 'note')
+        fields = ('id' , 'cid' , 'name' , 'ratio' , 'create_date' , 'writer' , 'note')
+        export_order = ('id' , 'cid' , 'name' , 'ratio' , 'create_date' , 'writer' , 'note')
 
 
 @admin.register( Carbon )
@@ -424,40 +494,87 @@ class ReferenceRangeResource( resources.ModelResource ):
         skip_unchanged = True
         fields = (
             'id' , 'index_name' , 'carbon_source' , 'tax_name' , 'version_num' , 'max_value' , 'min_value' , 'point' ,
-            'layout' ,
-            'reference_range' , 'create_date' ,
-            'historys' , 'writer' , 'note')
+            'layout' , 'reference_range' , 'create_date' , 'writer' , 'note')
         export_order = (
             'id' , 'index_name' , 'carbon_source' , 'tax_name' , 'version_num' , 'max_value' , 'min_value' , 'point' ,
-            'layout' ,
-            'reference_range' , 'create_date' ,
-            'historys' , 'writer' , 'note')
+            'layout' , 'reference_range' , 'create_date' , 'writer' , 'note')
 
-        # TODO row ['writer'] = # 系统自动添加创建人
+    def get_diff_headers(self):
+        return ['id' , '指标名称' , '碳源' , '菌种名称' , '版本号' , '最大值' , '最小值' , '小数点位数' , '报告显示形式' , '参考值' ,
+                '创建时间' , '创建人' , '备注']
+
+    def get_export_headers(self):
+        return ['id' , '指标名称' , '碳源' , '菌种名称' , '版本号' , '最大值' , '最小值' , '小数点位数' , '报告显示形式' , '参考值' ,
+                '创建时间' , '创建人' , '备注']
+
+    def export(self , queryset=None , *args , **kwargs):
+        """
+                Exports a resource.
+                """
+        self.before_export( queryset , *args , **kwargs )
+        if queryset is None:
+            queryset = self.get_queryset( )
+        headers = self.get_export_headers( )
+        data = tablib.Dataset( headers = headers )
+        if isinstance( queryset , QuerySet ):
+            # Iterate without the queryset cache, to avoid wasting memory when
+            # exporting large datasets.
+            iterable = queryset.iterator( )
+        else:
+            iterable = queryset
+        for obj in iterable:
+            cs = Carbon.objects.get( id = obj.carbon_source.id )  # 导出的表格中渠道来源列填写的是根据渠道编号
+            obj.carbon_source.id = cs.name
+            data.append( self.export_resource( obj ) )
+        self.after_export( queryset , data , *args , **kwargs )
+        return data
 
     def before_import_row(self , row , **kwargs):
         """
         Calls :meth:`import_export.fields.Field.save` if ``Field.attribute``
         and ``Field.column_name`` are found in ``data``.
         """
-        carbons = Carbon.objects.filter( id = row ['carbon_source'] )
-        genuss = Genus.objects.filter( english_name = row ['tax_name'] )
+        carbons = Carbon.objects.filter( name = row ['碳源'] )
+        genuss = Genus.objects.filter( english_name = row ['菌种名称'] )
         if carbons.count( ) == 0:
             raise forms.ValidationError( '碳源名称有误，请到基础数据中核实。' )
         if genuss.count( ) == 0:
             raise forms.ValidationError( '菌属名称有误，请到基础数据中核实。' )
         if (row ['id'] == None) and (
-                ReferenceRange.objects.filter( index_name = row ['index_name'] , carbon_source = row ['carbon_source'] ,
-                                               tax_name = row ['tax_name'] ,
-                                               version_num = row ['version_num'] ).count( ) > 0):
+                ReferenceRange.objects.filter( index_name = row ['指标名称'] , carbon_source = carbons.id ,
+                                               tax_name = row ['菌种名称'] ,
+                                               version_num = row ['版本号'] ).count( ) > 0):
             raise forms.ValidationError( '名称、碳源、菌种,版本，记录内容联合唯一，不能有冲突。' )
+
+    def get_or_init_instance(self , instance_loader , row):
+        """
+        Either fetches an already existing instance or initializes a new one.
+        """
+        carbons = Carbon.objects.get( name = row ['碳源'] )
+        instance = self.get_instance( instance_loader , row )
+        row ['index_name'] = row ['指标名称']
+        row ['carbon_source'] = carbons.id  # 转换为对象的ID进行导入
+        row ['tax_name'] = row ['菌种名称']
+        row ['version_num'] = row ['版本号']
+        row ['max_value'] = row ['最大值']
+        row ['min_value'] = row ['最小值']
+        row ['point'] = row ['小数点位数']
+        row ['layout'] = row ['报告显示形式']
+        row ['reference_range'] = get_reference_range( row ['最小值'] , row ['最大值'] , row ['报告显示形式'] , row ['小数点位数'] )
+        row ['create_date'] = row ['创建时间']
+        row ['writer'] = row ['创建人']
+        row ['note'] = row ['备注']
+        if instance:
+            return instance , False
+        else:
+            return self.init_instance( row ) , True
 
     def before_save_instance(self , instance , using_transactions , dry_run):
         """
             Override to add additional logic. Does nothing by default.
         """
-        instance.reference_range = get_reference_range( instance.min_value , instance.max_value , instance.layout ,
-                                                        instance.point )
+        cs = Carbon.objects.get( id = instance.carbon_source.id )  # 导入的表格中渠道来源列填写的是根据渠道编号
+        instance.carbon_source = cs
 
 
 @admin.register( ReferenceRange )
@@ -512,23 +629,35 @@ class ReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         obj.save( )
 
 
+class TemplateForm( forms.ModelForm ):
+    class Meta:
+        model = Template
+        exclude = ("" ,)
+
+    def clean_file_template(self):
+        ext = self.cleaned_data ["file_template"]._name.split( '.' ) [-1].lower( )
+        if ext not in ['doc' , 'docx' , 'xlsx' , 'xls' , 'txt']:
+            raise forms.ValidationError( "只能上传doc,docx后缀的word文档" )
+        return self.cleaned_data ["file_template"]
+
+
 class TemplateResource( resources.ModelResource ):
     class Meta:
         model = Template
         skip_unchanged = True
         fields = (
             'id' , 'product_name' , 'version_num' , 'upload_time' , 'use_count' , 'file_template' , 'create_date' ,
-            'historys' , 'writer' , 'note')
+            'writer' , 'note')
         export_order = (
             'id' , 'product_name' , 'version_num' , 'upload_time' , 'use_count' , 'file_template' , 'create_date' ,
-            'historys' , 'writer' , 'note')
+            'writer' , 'note')
 
 
 @admin.register( Template )
 class TemplateAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('product_name' , 'version_num' , 'upload_time' , 'use_count' , 'file_template' , 'create_date')
     list_display_links = ('product_name' ,)
-    readonly_fields = ('historys' ,)
+    readonly_fields = ('historys' , 'use_count')
     ordering = ('-create_date' ,)
     view_on_site = False
     list_max_show_all = 100
@@ -536,8 +665,8 @@ class TemplateAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     # list_filter=
     search_fields = ("product_name" ,)
     resource_class = TemplateResource
+    form = TemplateForm
 
-    # form =
     # list_editable =
     # actions =
 
@@ -563,20 +692,14 @@ class CheckTypeResource( resources.ModelResource ):
     class Meta:
         model = CheckType
         skip_unchanged = True
-        fields = (
-            'id' , 'number' , 'name' , 'note' , 'create_date' , 'historys' ,
-            'writer' ,
-            'note')
-        export_order = (
-            'id' , 'number' , 'name' , 'note' , 'create_date' , 'historys' ,
-            'writer' ,
-            'note')
+        fields = ('id' , 'number' , 'name' , 'note' , 'create_date' , 'writer' , 'note')
+        export_order = ('id' , 'number' , 'name' , 'note' , 'create_date' , 'writer' , 'note')
 
 
 @admin.register( CheckType )
 class CheckTypeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('id' , 'number' , 'name' , 'create_date')
-    list_display_links = ('name' ,)
+    list_display_links = ('number' , 'name' ,)
     readonly_fields = ('historys' ,)
     ordering = ('-create_date' ,)
     view_on_site = False
@@ -643,26 +766,106 @@ class CheckItemResource( resources.ModelResource ):
         model = CheckItem
         skip_unchanged = True
         fields = (
-            'id' , 'number' , 'check_name' , 'type' , 'carbon_source' , 'genus' , 'note' , 'create_date' , 'historys' ,
+            'id' , 'number' , 'check_name' , 'type' , 'carbon_source' , 'genus' , 'create_date' ,
             'writer' ,
             'note')
         export_order = (
-            'id' , 'number' , 'check_name' , 'type' , 'carbon_source' , 'genus' , 'note' , 'create_date' , 'historys' ,
+            'id' , 'number' , 'check_name' , 'type' , 'carbon_source' , 'genus' , 'create_date' ,
             'writer' ,
             'note')
 
+    def get_diff_headers(self):
+        return ['id' , '检测模块编号' , '检测模块名称' , '检测大类' , '碳源' , '菌种' , '创建时间' , '创建人' , '备注']
+
+    def get_export_headers(self):
+        return ['id' , '检测模块编号' , '检测模块名称' , '检测大类' , '碳源' , '菌种' , '创建时间' , '创建人' , '备注']
+
+    def export(self , queryset=None , *args , **kwargs):
+        """
+                Exports a resource.
+                """
+        self.before_export( queryset , *args , **kwargs )
+        if queryset is None:
+            queryset = self.get_queryset( )
+        headers = self.get_export_headers( )
+        data = tablib.Dataset( headers = headers )
+        if isinstance( queryset , QuerySet ):
+            # Iterate without the queryset cache, to avoid wasting memory when
+            # exporting large datasets.
+            iterable = queryset.iterator( )
+        else:
+            iterable = queryset
+        for obj in iterable:
+            checkType = CheckType.objects.get( id = obj.type.id )  # 导出的表格中渠道来源列填写的是根据渠道编号
+            obj.type.id = checkType.name                           #继承框架函数，增加以上2行代码
+            tmp_list = [Carbon.objects.get( cid = cb ).name for cb in
+                        re.split( '[；;]' , obj.carbon_source.strip( ) )]
+            carbon_source = ";".join( tmp_list )
+            obj.carbon_source = carbon_source
+            data.append( self.export_resource( obj ) )
+        self.after_export( queryset , data , *args , **kwargs )
+        return data
+
+    def before_import_row(self , row , **kwargs):
+        """
+        Calls :meth:`import_export.fields.Field.save` if ``Field.attribute``
+        and ``Field.column_name`` are found in ``data``.
+        """
+        checkitems = CheckItem.objects.filter(number = row ['检测模块编号'])
+        checkitems_name = CheckItem.objects.filter( check_name = row ['检测模块名称'] )
+        checktypes = CheckType.objects.filter( name = row ['检测大类'] )
+        genuss = Genus.objects.filter( english_name = row ['菌种'] )  # 导入的表格中菌种列填写的是根据套餐编号
+        if (row ['id'] is None) and (checkitems.count( ) > 0):
+            raise forms.ValidationError( "检测模块编号有重复。" )
+        if (row ['id'] is None) and (checkitems_name.count( ) > 0):
+            raise forms.ValidationError( "检测模块名称有重复。" )
+        if checktypes.count( ) == 0:
+            raise forms.ValidationError( '检测大类有误，请到基础数据管理中核实。' )
+        for cn in re.split( '[；;]' , row ['碳源'].strip( ) ):
+            if Carbon.objects.filter( name = cn ).count( ) == 0:
+                raise forms.ValidationError( '碳源有误，请到基础数据管理中核实。' )
+        if genuss.count( ) == 0:
+            raise forms.ValidationError( '菌属名称有误，请到基础数据管理中核实。' )
+
+    def get_or_init_instance(self , instance_loader , row):
+        """
+        Either fetches an already existing instance or initializes a new one.
+        """
+        checktype = CheckType.objects.get( name = row ['检测大类'] )
+        instance = self.get_instance( instance_loader , row )
+        row ['number'] = row ['检测模块编号']
+        row ['check_name'] = row ['检测模块名称']
+        row ['type'] = checktype.id  #转换为对象的ID进行导入
+        row ['carbon_source'] = row ['碳源']
+        row ['genus'] = row ['菌种']
+        row ['create_date'] = row ['创建时间']
+        row ['writer'] = row ['创建人']
+        row ['note'] = row ['备注']
+        if instance:
+            return instance , False
+        else:
+            return self.init_instance( row ) , True
+
+    def before_save_instance(self , instance , using_transactions , dry_run):
+        """
+            Override to add additional logic. Does nothing by default.
+        """
+        tmp_list = [Carbon.objects.get( name = cb ).cid for cb in
+                    re.split( '[；;]' , instance.carbon_source.strip( ) )]
+        carbon_source = ";".join( tmp_list )
+        instance.carbon_source = carbon_source
 
 @admin.register( CheckItem )
 class CheckItemAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id' , 'number' , 'check_name' ,'type','carbon_source','genus', 'create_date')
-    list_display_links = ('check_name' ,'number')
+    list_display = ('id' , 'number' , 'check_name' , 'type' , 'carbon_source' , 'genus' , 'create_date')
+    list_display_links = ('check_name' , 'number')
     readonly_fields = ('historys' ,)
     ordering = ('-create_date' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    list_filter =['type' , ]
-    search_fields = ('check_name' ,'number')
+    list_filter = ['type' , ]
+    search_fields = ('check_name' , 'number')
     resource_class = CheckItemResource
 
     form = CheckItemForm
@@ -688,8 +891,8 @@ class AgeResource( resources.ModelResource ):
     class Meta:
         model = Age
         skip_unchanged = True
-        fields = ('id' , 'name' , 'age_range' , 'create_date' , 'historys' , 'writer' , 'note')
-        export_order = ('id' , 'name' , 'age_range' , 'create_date' , 'historys' , 'writer' , 'note')
+        fields = ('id' , 'name' , 'age_range' , 'create_date' , 'writer' , 'note')
+        export_order = ('id' , 'name' , 'age_range' , 'create_date' , 'writer' , 'note')
 
 
 @admin.register( Age )
@@ -727,8 +930,8 @@ class ProvinceResource( resources.ModelResource ):
     class Meta:
         model = Province
         skip_unchanged = True
-        fields = ('id' , 'name' , 'create_date' , 'historys' , 'writer' , 'note')
-        export_order = ('id' , 'name' , 'create_date' , 'historys' , 'writer' , 'note')
+        fields = ('id' , 'name' , 'create_date' , 'writer' , 'note')
+        export_order = ('id' , 'name' , 'create_date' , 'writer' , 'note')
 
 
 @admin.register( Province )

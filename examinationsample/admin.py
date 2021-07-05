@@ -126,8 +126,8 @@ class SampleResource( resources.ModelResource ):
         for obj in iterable:
             agent = Agent.objects.get( id = obj.sample_source.id )  # 导出的表格中渠道来源列填写的是根据渠道编号
             obj.sample_source.id = agent.number
-            template = Template.objects.get( id = obj.report_template.id )
-            obj.report_template.id = template.product_name
+            template = Template.objects.get( id = obj.report_template.id ) # 导出的表格中渠道来源列填写的是根据渠道编号
+            obj.report_template.id = template.product_name          #继承框架函数，增加以上4行代码
             data.append( self.export_resource( obj ) )
 
         self.after_export( queryset , data , *args , **kwargs )
@@ -164,11 +164,11 @@ class SampleResource( resources.ModelResource ):
         row ['name'] = row ['姓名']
         row ['receive_sample'] = row ['收样人']
         row ['receive_sample_date'] = row ['收样日期']
-        row ['sample_source'] = agent.id
+        row ['sample_source'] = agent.id  #转换为对象的ID进行导入
         row ['set_meal'] = row ['套餐编号']
         row ['cost'] = row ['费用']
         row ['report_date'] = row ['预计报告日期']
-        row ['report_template'] = template.id
+        row ['report_template'] = template.id #转换为对象的ID进行导入
         row ['report_template_url'] = row ['报告模板地址']
         row ['note'] = row ['备注']
         if instance:
@@ -183,8 +183,8 @@ class SampleResource( resources.ModelResource ):
         agent = Agent.objects.get( id = instance.sample_source.id )  # 导入的表格中渠道来源列填写的是根据渠道编号
         instance.sample_source = agent
         instance.email = agent.email
-        product = Product.objects.get( number = instance.set_meal )
-        instance.set_meal = product.number
+        product = Product.objects.get( number = instance.set_meal ) #TODO 待删除
+        instance.set_meal = product.number                          #TODO 待删除
         template = Template.objects.get( id = instance.report_template.id )
         instance.report_template = template
         instance.report_template_url = template.file_template
@@ -352,7 +352,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         else:
             obj.historys = obj.historys + "\n" + "编号:" + obj.sample_number + ";对内编号:" \
                            + obj.internal_number + ";姓名:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
-        # obj.receive_sample = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        # obj.receive_sample = "%s %s" % (request.usast_name , request.user.first_name)  # 系统自动添加创建人
         obj.email = obj.sample_source.email
         obj.save( )
         if not change:  # 新增
