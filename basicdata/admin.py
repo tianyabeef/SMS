@@ -352,7 +352,7 @@ class ProductForm( forms.ModelForm ):
 
 @admin.register( Product )
 class ProductAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('number' , 'name' , 'price' , 'check_content' , 'create_date')
+    list_display = ('number' , 'name' , 'price' , 'check_content' , 'create_date' , 'days')
     list_display_links = ('number' ,)
     readonly_fields = ('historys' ,)
     ordering = ('-create_date' ,)
@@ -540,8 +540,8 @@ class ReferenceRangeResource( resources.ModelResource ):
             raise forms.ValidationError( '碳源名称有误，请到基础数据中核实。' )
         if genuss.count( ) == 0:
             raise forms.ValidationError( '菌属名称有误，请到基础数据中核实。' )
-        if (row ['id'] == None) and (
-                ReferenceRange.objects.filter( index_name = row ['指标名称'] , carbon_source = carbons.id ,
+        if (row ['id'] is None) and (
+                ReferenceRange.objects.filter( index_name = row ['指标名称'] , carbon_source = carbons[0].id ,
                                                tax_name = row ['菌种名称'] ,
                                                version_num = row ['版本号'] ).count( ) > 0):
             raise forms.ValidationError( '名称、碳源、菌种,版本，记录内容联合唯一，不能有冲突。' )
@@ -797,7 +797,7 @@ class CheckItemResource( resources.ModelResource ):
             iterable = queryset
         for obj in iterable:
             checkType = CheckType.objects.get( id = obj.type.id )  # 导出的表格中渠道来源列填写的是根据渠道编号
-            obj.type.id = checkType.name                           #继承框架函数，增加以上2行代码
+            obj.type.id = checkType.name  # 继承框架函数，增加以上2行代码
             tmp_list = [Carbon.objects.get( cid = cb ).name for cb in
                         re.split( '[；;]' , obj.carbon_source.strip( ) )]
             carbon_source = ";".join( tmp_list )
@@ -811,7 +811,7 @@ class CheckItemResource( resources.ModelResource ):
         Calls :meth:`import_export.fields.Field.save` if ``Field.attribute``
         and ``Field.column_name`` are found in ``data``.
         """
-        checkitems = CheckItem.objects.filter(number = row ['检测模块编号'])
+        checkitems = CheckItem.objects.filter( number = row ['检测模块编号'] )
         checkitems_name = CheckItem.objects.filter( check_name = row ['检测模块名称'] )
         checktypes = CheckType.objects.filter( name = row ['检测大类'] )
         genuss = Genus.objects.filter( english_name = row ['菌种'] )  # 导入的表格中菌种列填写的是根据套餐编号
@@ -835,7 +835,7 @@ class CheckItemResource( resources.ModelResource ):
         instance = self.get_instance( instance_loader , row )
         row ['number'] = row ['检测模块编号']
         row ['check_name'] = row ['检测模块名称']
-        row ['type'] = checktype.id  #转换为对象的ID进行导入
+        row ['type'] = checktype.id  # 转换为对象的ID进行导入
         row ['carbon_source'] = row ['碳源']
         row ['genus'] = row ['菌种']
         row ['create_date'] = row ['创建时间']
@@ -854,6 +854,7 @@ class CheckItemResource( resources.ModelResource ):
                     re.split( '[；;]' , instance.carbon_source.strip( ) )]
         carbon_source = ";".join( tmp_list )
         instance.carbon_source = carbon_source
+
 
 @admin.register( CheckItem )
 class CheckItemAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):

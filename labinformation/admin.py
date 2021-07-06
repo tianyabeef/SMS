@@ -5,7 +5,7 @@ from import_export import resources
 from import_export.admin import ImportExportActionModelAdmin
 from import_export.formats import base_formats
 from django import forms
-from labinformation.models import BioChemicalIndexes
+from labinformation.models import BioChemicalIndexes , IndexesUnusual
 from labinformation.models import ConventionalIndex
 from labinformation.models import DegradationIndexes
 from labinformation.models import QpcrIndexes
@@ -18,6 +18,7 @@ from basicdata.models import Genus
 from django.contrib import messages
 from examinationsample.models import Progress , Sample
 from django.db.models.query import QuerySet
+from django.utils.html import format_html
 
 admin.site.empty_value_display = '-empty-'
 
@@ -195,7 +196,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 'sample_number' , 'carbon_source' , 'genus' , 'occult_Tf_status' , 'occult_Tf_reference_range' ,
                 'occult_Hb_status' , 'occult_Hb_reference_range' , 'hp_status' , 'hp_reference_range' ,
                 'calprotectin_status' , 'calprotectin_reference_range' , 'ph_value_status' ,
-                'ph_value_reference_range' ,
+                'ph_value_reference_range' , 'carbon_source_zh' , 'genus_zh' ,
                 'is_status')
         else:
             self.readonly_fields = ()
@@ -234,6 +235,15 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         for obj in queryset:
             t += 1
             if obj.is_status < 1:
+                '''初始化偏高，偏低的异常状态'''
+                conventional_unusual , conventional_unusual_created = IndexesUnusual.objects.get_or_create(
+                    sample_number = obj.sample_number , check_type = "常规指标" )
+                if conventional_unusual_created:
+                    unusual_high = ""  # 偏高结果
+                    unusual_low = ""  # 偏低结果
+                else:
+                    unusual_high = conventional_unusual.high
+                    unusual_low = conventional_unusual.low
                 obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                 if obj_progress.is_cgzb:
                     obj_progress.cgzb_testing_date = datetime.date.today( )
@@ -241,6 +251,27 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     obj_progress.save( )
                     obj.is_status = 2  # 2是标记为完成的
                     obj.save( )
+                    ''' 整理异常检测结果 '''
+                    for key , status in {"occult_Tf": obj.occult_Tf_status , "occult_Hb": obj.occult_Hb_status ,
+                                         "calprotectin": obj.calprotectin_status , "hp": obj.hp_status}.items( ):
+                        if status == 1:
+                            unusual_high = "%s,%s,%s,%s;" % (
+                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                ConventionalIndex._meta.get_field( key ).verbose_name)
+                    if obj.ph_value_status != 1:
+                        if obj.ph_value_status == 0:
+                            unusual_high = "%s;%s,%s,%s;" % (
+                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                ConventionalIndex._meta.get_field( "ph_value" ).verbose_name)
+                        else:
+                            unusual_low = "%s;%s,%s,%s;" % (
+                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                ConventionalIndex._meta.get_field(
+                                    "ph_value" ).verbose_name)
+                    ''' 把异常检测结果存到数据库中 '''
+                    conventional_unusual.high = unusual_high
+                    conventional_unusual.low = unusual_low
+                    conventional_unusual.save( )
                     i += 1
                 else:
                     n += 1
@@ -406,7 +437,10 @@ class BioChemicalIndexesForm( forms.ModelForm ):
 
 @admin.register( BioChemicalIndexes )
 class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id' , 'sample_number' , 'carbon_source' , 'genus' , 'fecal_nitrogen' , 'bile_acid' , 'is_status')
+    list_display = (
+        'id' , 'sample_number' , 'carbon_source' , 'genus' , 'fecal_nitrogen' , 'fecal_nitrogen_status_colored' ,
+        'bile_acid' ,
+        'bile_acid_status_colored' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ('-sample_number' ,)
     view_on_site = False
@@ -419,13 +453,33 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
     # list_editable =
     actions = ['make_finish' , 'export_admin_action']
 
+    def fecal_nitrogen_status_colored(self , obj):
+        if obj.fecal_nitrogen_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_fecal_nitrogen_status_display( ) )
+        elif obj.fecal_nitrogen_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_fecal_nitrogen_status_display( ) )
+        else:
+            return obj.get_fecal_nitrogen_status_display( )
+
+    fecal_nitrogen_status_colored.short_description = "粪氨状态"
+
+    def bile_acid_status_colored(self , obj):
+        if obj.bile_acid_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_bile_acid_status_display( ) )
+        elif obj.bile_acid_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_bile_acid_status_display( ) )
+        else:
+            return obj.get_bile_acid_status_display( )
+
+    bile_acid_status_colored.short_description = "胆汁酸状态"
+
     def get_readonly_fields(self , request , obj=None):
         # 根据 obj 是否为空来判断,修改数据时不能修改样本编号，
         if obj:
             self.readonly_fields = (
                 'sample_number' , 'carbon_source' , 'genus' , 'fecal_nitrogen_status' ,
                 'fecal_nitrogen_reference_range' ,
-                'bile_acid_status' , 'bile_acid_reference_range' , 'is_status')
+                'bile_acid_status' , 'bile_acid_reference_range' , 'is_status' , 'carbon_source_zh' , 'genus_zh')
         else:
             self.readonly_fields = ()
         if request.user.is_superuser:
@@ -463,6 +517,15 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
         for obj in queryset:
             t += 1
             if obj.is_status < 1:
+                '''初始化偏高，偏低的异常状态'''
+                bio_unusual , bio_unusual_created = IndexesUnusual.objects.get_or_create(
+                    sample_number = obj.sample_number , check_type = "生化检测" )
+                if bio_unusual_created:
+                    unusual_high = ""  # 偏高结果
+                    unusual_low = ""  # 偏低结果
+                else:
+                    unusual_high = bio_unusual.high
+                    unusual_low = bio_unusual.low
                 obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                 if obj_progress.is_shzb:
                     obj_progress.shzb_testing_date = datetime.date.today( )
@@ -470,6 +533,33 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                     obj_progress.save( )
                     obj.is_status = 2  # 2是标记为完成的
                     obj.save( )
+                    ''' 整理异常检测结果 '''
+                    fecal_nitrogen_status = obj.fecal_nitrogen_status
+                    bile_acid_status = obj.bile_acid_status
+                    if fecal_nitrogen_status != 1:
+                        if fecal_nitrogen_status == 0:
+                            unusual_high = "%s,%s,%s,%s;" % (
+                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                BioChemicalIndexes._meta.get_field( "fecal_nitrogen" ).verbose_name)
+                        else:
+                            unusual_low = "%s,%s,%s,%s;" % (
+                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                BioChemicalIndexes._meta.get_field(
+                                    "fecal_nitrogen" ).verbose_name)
+                    if bile_acid_status != 1:
+                        if bile_acid_status == 0:
+                            unusual_high = "%s,%s,%s,%s;" % (
+                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                BioChemicalIndexes._meta.get_field( "bile_acid" ).verbose_name)
+                        else:
+                            unusual_low = "%s,%s,%s,%s;" % (
+                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                BioChemicalIndexes._meta.get_field(
+                                    "bile_acid" ).verbose_name)
+                    ''' 把异常检测结果存到数据库中 '''
+                    bio_unusual.high = unusual_high
+                    bio_unusual.low = unusual_low
+                    bio_unusual.save( )
                     i += 1
                 else:
                     n += 1
@@ -705,6 +795,15 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         for obj in queryset:
             t += 1
             if obj.is_status < 1:
+                '''初始化偏高，偏低的异常状态'''
+                qpcr_unusual , qpcr_unusual_created = IndexesUnusual.objects.get_or_create(
+                    sample_number = obj.sample_number , check_type = "qPCR检测" )
+                if qpcr_unusual_created:
+                    unusual_high = ""  # 偏高结果
+                    unusual_low = ""  # 偏低结果
+                else:
+                    unusual_high = qpcr_unusual.high
+                    unusual_low = qpcr_unusual.low
                 obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                 if obj_progress.is_qpcr:
                     obj_progress.qPCR_testing_date = datetime.date.today( )
@@ -712,6 +811,22 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     obj_progress.save( )
                     obj.is_status = 2  # 2是标记为完成的
                     obj.save( )
+                    ''' 整理异常检测结果 '''
+                    concentration_status = obj.concentration_status
+                    if concentration_status != 1:
+                        if concentration_status == 0:
+                            unusual_high = "%s,%s,%s,%s;" % (
+                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                QpcrIndexes._meta.get_field( "concentration" ).verbose_name)
+                        else:
+                            unusual_low = "%s,%s,%s,%s;" % (
+                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                QpcrIndexes._meta.get_field(
+                                    "concentration" ).verbose_name)
+                    ''' 把异常检测结果存到数据库中 '''
+                    qpcr_unusual.high = unusual_high
+                    qpcr_unusual.low = unusual_low
+                    qpcr_unusual.save( )
                     i += 1
                 else:
                     n += 1
@@ -752,9 +867,9 @@ class ScfasIndexesResource( resources.ModelResource ):
         fields = ('id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
                   'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
                   'isovaleric' ,
-                  'acid_first' , 'acid_second', 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
-                        'isobutyric_acid_ratio' , 'valeric_ratio' ,
-                        'isovaleric_ratio')
+                  'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
+                  'isobutyric_acid_ratio' , 'valeric_ratio' ,
+                  'isovaleric_ratio')
         export_order = ('id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
                         'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
                         'isovaleric' ,
@@ -908,7 +1023,8 @@ class ScfasIndexesResource( resources.ModelResource ):
 
         if (instance.isobutyric_acid is not None) and (instance.valeric is not None) and (
                 instance.isovaleric is not None):
-            instance.acid_second = (instance.isobutyric_acid + instance.valeric + instance.isovaleric) / instance.total_acid
+            instance.acid_second = (
+                                           instance.isobutyric_acid + instance.valeric + instance.isovaleric) / instance.total_acid
 
         if instance.acetic_acid is not None:
             instance.acetic_acid_ratio = instance.acetic_acid / instance.total_acid
@@ -1055,7 +1171,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     resource_class = ScfasIndexesResource
     # form =
     # list_editable =
-    actions = ['make_save' , 'make_finish' , 'export_admin_action']
+    actions = ['make_finish' , 'export_admin_action']
     exclude = (
         'isovaleric1' , 'isovaleric1_status' , 'isovaleric1_reference_range' , 'isovaleric2' , 'isovaleric2_status' ,
         'isovaleric2_reference_range' , 'isovaleric3' , 'isovaleric3_status' , 'isovaleric3_reference_range' ,
@@ -1095,18 +1211,6 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         )
         return [f for f in formats if f( ).can_import( )]
 
-    def make_save(self , request , queryset):
-        i = 0  # 提交成功的数据
-        n = 0  # 提交过的数量
-        t = 0  # 选中状态
-        for obj in queryset:
-            t += 1
-            super( ).save_model( request , obj , self.form , self.change )
-            i += 1
-        self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
-
-    make_save.short_description = '1保存'
-
     def make_finish(self , request , queryset):
         i = 0  # 提交成功的数据
         n = 0  # 提交过的数量
@@ -1114,6 +1218,15 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         for obj in queryset:
             t += 1
             if obj.is_status < 1:
+                '''初始化偏高，偏低的异常状态'''
+                scfas_unusual , scfas_unusual_created = IndexesUnusual.objects.get_or_create(
+                    sample_number = obj.sample_number , check_type = "SCFAs指标" )
+                if scfas_unusual_created:
+                    unusual_high = ""  # 偏高结果
+                    unusual_low = ""  # 偏低结果
+                else:
+                    unusual_high = scfas_unusual.high
+                    unusual_low = scfas_unusual.low
                 obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                 if obj_progress.is_scfa:
                     obj_progress.SCFAs_testing_date = datetime.date.today( )
@@ -1121,6 +1234,33 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     obj_progress.save( )
                     obj.is_status = 2  # 2是标记为完成的
                     obj.save( )
+                    ''' 整理异常检测结果 '''
+                    for key , status in {"total_acid": obj.total_acid_status , "acetic_acid": obj.acetic_acid_status ,
+                                         "propionic": obj.propionic_status , "butyric": obj.butyric_status ,
+                                         "isobutyric_acid": obj.isobutyric_acid_status ,
+                                         "valeric": obj.valeric_status ,
+                                         "isovaleric": obj.isovaleric_status , "acid_first": obj.acid_first_status ,
+                                         "acid_second": obj.acid_second_status ,
+                                         "acetic_acid_ratio": obj.acetic_acid_ratio_status ,
+                                         "propionic_ratio": obj.propionic_ratio_status ,
+                                         "butyric_ratio": obj.butyric_ratio_status ,
+                                         "isobutyric_acid_ratio": obj.isobutyric_acid_ratio_status ,
+                                         "valeric_ratio": obj.valeric_ratio_status ,
+                                         "isovaleric_ratio": obj.isovaleric_ratio_status}.items( ):
+                        if status != 1:
+                            if status == 0:
+                                unusual_high = "%s,%s,%s,%s;" % (
+                                    unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                    ScfasIndexes._meta.get_field( key ).verbose_name)
+                            else:
+                                unusual_low = "%s,%s,%s,%s;" % (
+                                    unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                    ScfasIndexes._meta.get_field( key ).verbose_name)
+                    ''' 把异常检测结果存到数据库中 '''
+                    scfas_unusual.high = unusual_high
+                    scfas_unusual.low = unusual_low
+                    scfas_unusual.save( )
+
                     i += 1
                 else:
                     n += 1
@@ -1457,6 +1597,15 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
         for obj in queryset:
             t += 1
             if obj.is_status < 1:
+                '''初始化偏高，偏低的异常状态'''
+                degradation_unusual , degradation_unusual_created = IndexesUnusual.objects.get_or_create(
+                    sample_number = obj.sample_number , check_type = "气压与降解率" )
+                if degradation_unusual_created:
+                    unusual_high = ""  # 偏高结果
+                    unusual_low = ""  # 偏低结果
+                else:
+                    unusual_high = degradation_unusual.high
+                    unusual_low = degradation_unusual.low
                 obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                 if obj_progress.is_qyjj:
                     obj_progress.degradation_testing_date = datetime.date.today( )
@@ -1464,6 +1613,34 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                     obj_progress.save( )
                     obj.is_status = 2  # 2是标记为完成的
                     obj.save( )
+                    ''' 整理异常检测结果 '''
+                    degradation_status = obj.degradation_status
+                    gas_status = obj.gas_status
+                    if gas_status != 1:
+                        if gas_status == 0:
+                            unusual_high = "%s;%s,%s,%s;" % (
+                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                DegradationIndexes._meta.get_field( "gas" ).verbose_name)
+                        else:
+                            unusual_low = "%s;%s,%s,%s;" % (
+                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                DegradationIndexes._meta.get_field(
+                                    "gas" ).verbose_name)
+                    if degradation_status != 1:
+                        if degradation_status == 0:
+                            unusual_high = "%s,%s,%s,%s;" % (
+                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                DegradationIndexes._meta.get_field( "degradation" ).verbose_name)
+                        else:
+                            unusual_low = "%s,%s,%s,%s;" % (
+                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                DegradationIndexes._meta.get_field(
+                                    "degradation" ).verbose_name)
+                    ''' 把异常检测结果存到数据库中 '''
+                    degradation_unusual.high = unusual_high
+                    degradation_unusual.low = unusual_low
+                    degradation_unusual.save( )
+
                     i += 1
                 else:
                     n += 1

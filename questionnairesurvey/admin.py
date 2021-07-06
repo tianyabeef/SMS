@@ -4,7 +4,7 @@ from django.contrib import admin , messages
 from import_export import resources
 from import_export.admin import ImportExportActionModelAdmin
 from import_export.formats import base_formats
-from basicdata.models import Age
+from basicdata.models import Age , Carbon , Genus
 from basicdata.models import Province
 from examinationsample.models import Progress
 from questionnairesurvey.models import Quenstion
@@ -51,23 +51,100 @@ class QuenstionResource( resources.ModelResource ):
         skip_unchanged = True
 
         fields = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'name' , 'gender' , 'age' , 'height' , 'weight' ,
-            'waistline' , 'bmi_value' , 'phone' , 'email' , 'complaint' , 'condition' , 'exhaust' , 'smoke' ,
-            'antibiotic_consumption' , 'probiotic_supplements' ,
-            'prebiotics_supplement' , 'dietary_habit' , 'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' ,
-            'hdl' , 'blood_glucose' , 'trioxypurine' , 'is_status')
+            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'name' , 'gender' ,
+            'age' , 'age_sgement' , 'province' , 'height' , 'weight' , 'waistline' , 'bmi_value' , 'phone' ,
+            'email' , 'complaint' , 'condition' , 'exhaust' , 'classification' , 'unwell' , 'smoke' ,
+            'antibiotic_consumption' , 'probiotic_supplements' , 'prebiotics_supplement' , 'dietary_habit' ,
+            'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'blood_pressure' ,
+            'trioxypurine')
         export_order = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'name' , 'gender' , 'age' , 'height' , 'weight' ,
-            'waistline' , 'bmi_value' , 'phone' , 'email' , 'complaint' , 'condition' , 'exhaust' , 'smoke' ,
-            'antibiotic_consumption' , 'probiotic_supplements' ,
-            'prebiotics_supplement' , 'dietary_habit' , 'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' ,
-            'hdl' , 'blood_glucose' , 'trioxypurine' , 'is_status')
+            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'name' , 'gender' ,
+            'age' , 'age_sgement' , 'province' , 'height' , 'weight' , 'waistline' , 'bmi_value' , 'phone' ,
+            'email' , 'complaint' , 'condition' , 'exhaust' , 'classification' , 'unwell' , 'smoke' ,
+            'antibiotic_consumption' , 'probiotic_supplements' , 'prebiotics_supplement' , 'dietary_habit' ,
+            'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'blood_pressure' ,
+            'trioxypurine')
+
+    def get_diff_headers(self):
+        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '姓名' , '性别' , '年龄' , '年龄分段' , '地域' , '身高' , '体重' ,
+                '腰围' , 'BMI值' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
+                '近1个月抗生素食用' , '近两周益生菌补充' , '近两周益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
+                '血压' , '尿酸']
+
+    def get_export_headers(self):
+        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '姓名' , '性别' , '年龄' , '年龄分段' , '地域' , '身高' , '体重' ,
+                '腰围' , 'BMI值' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
+                '近1个月抗生素食用' , '近两周益生菌补充' , '近两周益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
+                '血压' , '尿酸']
+
+    def before_import_row(self , row , **kwargs):
+        """
+        Calls :meth:`import_export.fields.Field.save` if ``Field.attribute``
+        and ``Field.column_name`` are found in ``data``.
+        """
+        carbons = Carbon.objects.filter( id = row ['碳源'] )
+        genuss = Genus.objects.filter( id = row ['菌种'] )
+        if carbons.count( ) == 0:
+            raise forms.ValidationError( '碳源名称有误，请到基础数据中核实。' )
+        if genuss.count( ) == 0:
+            raise forms.ValidationError( '菌属名称有误，请到基础数据中核实。' )
+        if (row ['id'] is None) and (
+                Quenstion.objects.filter( sample_number = row ['样本编号'] , carbon_source = row ['碳源'] ,
+                                          genus = row ['菌种'] ).count( ) > 0):
+            raise forms.ValidationError( '样本编号、碳源、菌种 记录内容联合唯一，不能有冲突。' )
+        if Age.objects.filter( name = row ["年龄分段"] ).count( ) == 0:
+            raise forms.ValidationError( "年龄段在数据库中无法查询到" )
+        if Province.objects.filter( name = row ["地域"] ).count( ) == 0:
+            raise forms.ValidationError( "地域在数据库中无法查询到" )
+
+    def get_or_init_instance(self , instance_loader , row):
+        """
+        Either fetches an already existing instance or initializes a new one.
+        """
+        instance = self.get_instance( instance_loader , row )
+        row ['sample_number'] = row ['样本编号']
+        row ['carbon_source'] = row ['碳源']
+        row ['genus'] = row ['菌种']
+        row ['carbon_source_zh'] = row ['碳源中文名称']
+        row ['genus_zh'] = row ['菌种中文名称']
+        row ['name'] = row ['姓名']
+        row ['gender'] = row ['性别']
+        row ['age'] = row ['年龄']
+        row ['age_sgement'] = row ['年龄分段']
+        row ['province'] = row ['地域']
+        row ['height'] = row ['身高']
+        row ['weight'] = row ['体重']
+        row ['waistline'] = row ['腰围']
+        row ['bmi_value'] = row ['BMI值']
+        row ['phone'] = row ['电话']
+        row ['email'] = row ['邮箱']
+        row ['complaint'] = row ['主诉']
+        row ['condition'] = row ['近1个月排便情况']
+        row ['exhaust'] = row ['近1个月大便频次']
+        row ['classification'] = row ['自评布里斯托分级']
+        row ['unwell'] = row ['近1个月胃肠道不适症状']
+        row ['smoke'] = row ['吸烟饮酒']
+        row ['antibiotic_consumption'] = row ['近1个月抗生素食用']
+        row ['probiotic_supplements'] = row ['近两周益生菌补充']
+        row ['prebiotics_supplement'] = row ['近两周益生元补充']
+        row ['dietary_habit'] = row ['饮食习惯']
+        row ['allergen'] = row ['过敏源']
+        row ['anamnesis'] = row ['既往病史']
+        row ['triglyceride'] = row ['甘油三酯']
+        row ['cholesterol'] = row ['总胆固醇']
+        row ['hdl'] = row ['HDL-C']
+        row ['blood_glucose'] = row ['餐后血糖']
+        row ['blood_pressure'] = row ['血压']
+        row ['trioxypurine'] = row ['尿酸']
+        if instance:
+            return instance , False
+        else:
+            return self.init_instance( row ) , True
 
 
 @admin.register( Quenstion )
 class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('sample_number' , 'name' , 'gender' , 'age' , 'height' , 'weight' ,
-                    'waistline' , 'bmi_value' , 'phone' , 'email' , 'is_status')
+    list_display = ('sample_number' , 'name' , 'gender' , 'age' , 'bmi_value' , 'phone' , 'email' , 'is_status')
     list_display_links = ('sample_number' ,)
     # readonly_fields =
     ordering = ('-sample_number' ,)

@@ -85,6 +85,7 @@ class Product( models.Model ):
                                  blank = True )
     check_content = models.CharField( verbose_name = '检测模块' , max_length = 255 )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now = True )
+    days = models.IntegerField( verbose_name = '周期天数' , default = 1 , validators = [MinValueValidator( 0 ) , MaxValueValidator( 200 )])
     historys = models.TextField( verbose_name = "历史填写日期" , blank = True , null = True )
     writer = models.CharField( verbose_name = "创建人" , max_length = 255 , blank = True , null = True )
     note = models.TextField( verbose_name = '备注' , max_length = 255 , blank = True , null = True )

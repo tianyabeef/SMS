@@ -101,6 +101,11 @@ class BioChemicalIndexes( models.Model ):
     def __str__(self):
         return '%s' % self.sample_number
 
+class IndexesUnusual( models.Model ):
+    sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    check_type = models.CharField( verbose_name = '检测大类名称' , max_length = 255 )
+    high = models.TextField( verbose_name = '偏高' , blank = True , null = True )
+    low = models.TextField( verbose_name = '偏低' ,  blank = True , null = True )
 
 # Create your models here.
 class QpcrIndexes( models.Model ):

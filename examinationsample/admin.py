@@ -19,7 +19,7 @@ from examinationreport.models import Reports
 from examinationsample.models import Checks
 from examinationsample.models import Progress
 from examinationsample.models import Sample
-from labinformation.models import BioChemicalIndexes
+from labinformation.models import BioChemicalIndexes , IndexesUnusual
 from labinformation.models import ConventionalIndex
 from labinformation.models import DegradationIndexes
 from labinformation.models import QpcrIndexes
@@ -188,10 +188,12 @@ class SampleResource( resources.ModelResource ):
         template = Template.objects.get( id = instance.report_template.id )
         instance.report_template = template
         instance.report_template_url = template.file_template
+        if instance.cost is None:
+            instance.cost = product.price
         if (instance.receive_sample_date is None):
             instance.receive_sample_date = datetime.date.today( )
         if (instance.report_date is None):
-            instance.report_date = datetime.datetime.now( ) + datetime.timedelta( days = 1 )  # 当前时间加1天
+            instance.report_date = datetime.datetime.now( ) + datetime.timedelta( days = product.days )  # 当前时间加1天
 
     def after_save_instance(self , instance , using_transactions , dry_run):
         # 保存样本收样的同时，保存了样本检测表，在样本检测项的表格中没有数据，则表明时第一次创建
@@ -219,21 +221,21 @@ class SampleResource( resources.ModelResource ):
 class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
         "sample_number" , 'internal_number' , 'name' , 'receive_sample' , 'receive_sample_date' , 'sample_source' ,
-        'product_name' , 'report_template' ,
+        'product_name' , 'report_template' ,'report_date',
         'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ("-sample_number" ,)
+    ordering = ("-sample_number" ,"-receive_sample_date")
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ("sample_source" , 'is_status')
-    search_fields = ('sample_number' , 'internal_number' ,)
+    search_fields = ('sample_number' , 'internal_number' , 'name' ,)
     resource_class = SampleResource
     form = SampleForm
     # list_editable = ('internal_number' ,)
     # actions=
     inlines = [ChecksInline , ]
-    date_hierarchy = 'report_date'  # 按照时间搜素
+    date_hierarchy = 'receive_sample_date'  # 按照时间搜素
     actions = ['make_test' , 'export_admin_action']
     fieldsets = (
         ('基本信息' , {
@@ -346,34 +348,40 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def save_model(self , request , obj , form , change):
         if obj.report_template is not None:
             obj.report_template_url = str( obj.report_template.file_template )
+        products = Product.objects.filter( number = obj.set_meal )
+        if products.count( ) != 1:
+            raise forms.ValidationError( "套餐编号有问题，请核实基础数据" )
+        if obj.cost is None:
+            obj.cost = products[0].price
         if obj.historys is None:
             obj.historys = "编号:" + obj.sample_number + ";对内编号:" + obj.internal_number + ";姓名:" + obj.name + ";时间:" \
                            + datetime.date.today( ).__str__( )
         else:
             obj.historys = obj.historys + "\n" + "编号:" + obj.sample_number + ";对内编号:" \
                            + obj.internal_number + ";姓名:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
-        # obj.receive_sample = "%s %s" % (request.usast_name , request.user.first_name)  # 系统自动添加创建人
         obj.email = obj.sample_source.email
+        if (obj.report_date is None):
+            if obj.receive_sample_date is None:
+                obj.report_date = datetime.date.today( ) + datetime.timedelta( days = products[0].days )  # 当前时间加1天
+            else:
+                obj.report_date = obj.receive_sample_date + datetime.timedelta( days = products[0].days )  # 当前时间加1天
         obj.save( )
         if not change:  # 新增
             # 保存样本收样的同时，保存了样本检测表，在样本检测项的表格中没有数据，则表明时第一次创建
             if Checks.objects.filter( sample_number = obj ).count( ) == 0:
-                products = Product.objects.filter( number = obj.set_meal )
-                if products.count( ) == 1:
-                    numbers = re.split( '[；;]' , products [0].check_content )
-                    for number in numbers:
-                        check_item = CheckItem.objects.filter( number = number )
-                        Checks.objects.get_or_create( check_number = check_item [0].number ,
-                                                      check_name = check_item [0].check_name ,
-                                                      sample_number_id = obj.id )
-                    # 对样本第一次收样时，在样本进度表中保存收样时间
-                    obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number ,
-                                                                             internal_number = obj.internal_number )
-                    obj_progress.receive_sample_date = obj.receive_sample_date  # 为避免报错，先找到数据，在赋值。
-                    obj_progress.save( )
-                else:
-                    raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
-
+                numbers = re.split( '[；;]' , products [0].check_content )
+                for number in numbers:
+                    check_item = CheckItem.objects.filter( number = number )
+                    Checks.objects.get_or_create( check_number = check_item [0].number ,
+                                                  check_name = check_item [0].check_name ,
+                                                  sample_number_id = obj.id )
+                # 对样本第一次收样时，在样本进度表中保存收样时间
+                obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number ,
+                                                                         internal_number = obj.internal_number )
+                obj_progress.receive_sample_date = obj.receive_sample_date  # 为避免报错，先找到数据，在赋值。
+                obj_progress.save( )
+            else:
+                raise forms.ValidationError( "样本的检查项已经存在，请删除检查项" )
 
 
 class ProgressResource( resources.ModelResource ):
@@ -545,7 +553,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         return rt
 
     def make_published(self , request , queryset):
-        i = 0  # 提交成功的数据
+        ii = 0  # 提交成功的数据
         n = 0  # 提交过的数量
         t = 0  # 选中状态
         for obj in queryset:
@@ -556,7 +564,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 sample = Sample.objects.filter( sample_number = obj.sample_number ) [0]
                 filename , suffix = os.path.splitext( sample.report_template_url )
                 obj_progress.word_report = filename + obj.sample_number + suffix  # 为避免报错，先找到数据，在赋值。
-                i += 1
+                ii += 1
                 obj.save( )
                 obj_progress.save( )
                 # 生成word报告
@@ -644,12 +652,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 # forms.ValidationError( data )
                 for tmp in data.values( ):
                     DataInformation( **tmp ).save( )
-                # quenstion = Quenstion.objects.filter(sample_number = obj.sample_number)
-                # conventional_index = ConventionalIndex.objects.filter(sample_number = obj.sample_number)
-                # bio_chemical_indexes = BioChemicalIndexes.objects.filter(sample_number = obj.sample_number)
-                # qpcr_indexes = QpcrIndexes.objects.filter(sample_number = obj.sample_number,carbon_source = obj,genus = obj)
-                # degradation_indexes = DegradationIndexes.objects.filter(sample_number = obj.sample_number,carbon_source = obj)
-                # context = {'company_name': str( checks.count( ) ) + "202年↑↑↑↑10月"}
+
                 data.update( {'receive_sample_date': str( datetime.date.today( ) )} )
                 data.update( {'report_testing_date': str( datetime.date.today( ) )} )
                 jinja_env = jinja2.Environment( )
@@ -665,11 +668,13 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 jinja_env.filters ['percent1'] = self.percent_value_display1
                 jinja_env.filters ['percent3'] = self.percent_value_display3
                 jinja_env.filters ['side'] = self.side_value_display
+                unusuals = IndexesUnusual.objects.filter(sample_number = obj.sample_number)
+                data["unusuals"] = unusuals
                 doc.render( data , jinja_env )
                 doc.save( 'media/' + str( filename + obj.sample_number + suffix ) )
             else:
                 n += 1
-        self.message_user( request , "选择%s条信息，完成操作%s条，不操作%s条" % (t , i , n) , level = messages.SUCCESS )
+        self.message_user( request , "选择%s条信息，完成操作%s条，不操作%s条" % (t , ii , n) , level = messages.SUCCESS )
 
     make_published.short_description = "1出具报告"
 

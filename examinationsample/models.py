@@ -25,7 +25,7 @@ class Sample( models.Model ):
     sample_source = models.ForeignKey( Agent , verbose_name = '渠道来源' , on_delete = models.CASCADE )
     set_meal = models.CharField( verbose_name = '套餐编号' , max_length = 255 )
     cost = models.DecimalField( verbose_name = '费用' , max_digits = 8 , decimal_places = 2 , null = True , blank = True )
-    report_date = models.DateField( verbose_name = '预计报告日期' , auto_now = True , blank = True , null = True )
+    report_date = models.DateField( verbose_name = '预计报告日期' , blank = True , null = True )
     report_template = models.ForeignKey( Template , verbose_name = '报告模板' , on_delete = models.CASCADE )
     report_template_url = models.CharField( verbose_name = '报告模板地址' , max_length = 255 )  # 选择模板是自动填写
     note = models.TextField( verbose_name = '备注' , max_length = 255 , null = True , blank = True )
