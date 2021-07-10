@@ -12,7 +12,7 @@ class Quenstion( models.Model ):
     )
     TEST_CHOICES = (
         (0 , '待录入') ,
-        (2 , '完成') ,
+        (1 , '完成') ,
     )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )  # 需要样本录入后才能有问卷信息
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )

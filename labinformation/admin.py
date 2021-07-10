@@ -1,16 +1,17 @@
 import datetime
+import re
 import tablib
 from django.contrib import admin
 from import_export import resources
 from import_export.admin import ImportExportActionModelAdmin
 from import_export.formats import base_formats
 from django import forms
-from labinformation.models import BioChemicalIndexes , IndexesUnusual
+from labinformation.models import BioChemicalIndexes , IndexesUnusual , MetaRiskIndexes , GutRiskIndexes
 from labinformation.models import ConventionalIndex
 from labinformation.models import DegradationIndexes
 from labinformation.models import QpcrIndexes
 from labinformation.models import ScfasIndexes
-from basicdata.models import CTformula
+from basicdata.models import CTformula , RiskItem , RiskItemDefault
 from formula import Solver
 from basicdata.models import ReferenceRange
 from basicdata.models import Carbon
@@ -21,6 +22,52 @@ from django.db.models.query import QuerySet
 from django.utils.html import format_html
 
 admin.site.empty_value_display = '-empty-'
+
+
+
+def get_meta_risk(risk_items):
+    if risk_items.count( ) == 1:
+        risk_item = risk_items [0]
+        meta_risk = re.split( '[；;]' , risk_item.index_name )
+    else:
+        meta_risk = []
+    return meta_risk
+
+
+def create_risk(obj , key , key_obj , low_or_high , QpcrIndexes=False):
+    """
+    :param QpcrIndexes:  是否pqcr对象
+    :param obj:
+    :param key:  偏高或偏低的指标
+    :param key_obj: 指标的对象
+    :param low_or_high: 偏高或偏低的字符串
+    """
+    if QpcrIndexes:
+        MetaRiskIndexes.objects.create( sample_number = obj.sample_number ,
+                                        carbon_source = obj.carbon_source ,
+                                        genus = obj.genus ,
+                                        index_name = obj.genus_zh ,
+                                        is_status = low_or_high ,
+                                        blood_fat = 0 , fat = 0 )
+        GutRiskIndexes.objects.create( sample_number = obj.sample_number ,
+                                       carbon_source = obj.carbon_source ,
+                                       genus = obj.genus ,
+                                       index_name = obj.genus_zh ,
+                                       is_status = low_or_high ,
+                                       infection = 0 , scherm = 0 , cancer = 0 )
+    else:
+        MetaRiskIndexes.objects.create( sample_number = obj.sample_number ,
+                                        carbon_source = obj.carbon_source ,
+                                        genus = obj.genus ,
+                                        index_name = key_obj._meta.get_field( key ).verbose_name ,
+                                        is_status = low_or_high ,
+                                        blood_fat = 0 , fat = 0 )
+        GutRiskIndexes.objects.create( sample_number = obj.sample_number ,
+                                       carbon_source = obj.carbon_source ,
+                                       genus = obj.genus ,
+                                       index_name = key_obj._meta.get_field( key ).verbose_name ,
+                                       is_status = low_or_high ,
+                                       infection = 0 , scherm = 0 , cancer = 0 )
 
 
 def get_status(objects , carbon_source , tax_name , field_name , obj_field):
@@ -174,8 +221,10 @@ class ConventionalIndexResource( resources.ModelResource ):
 @admin.register( ConventionalIndex )
 class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-        'id' , 'sample_number' , 'carbon_source' , 'genus' , 'occult_Tf' , 'occult_Hb' , 'hp' , 'calprotectin' ,
-        'ph_value' ,
+        'id' , 'sample_number' , 'carbon_source' , 'genus' , 'occult_Tf_status_colored' , 'occult_Hb_status_colored' ,
+        'hp_status_colored' ,
+        'calprotectin_status_colored' ,
+        'ph_value_status_colored' ,
         'sample_type' , 'colour' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ('-sample_number' ,)
@@ -187,7 +236,57 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     resource_class = ConventionalIndexResource
     # form = ConventionalIndexForm
     # list_editable =
-    actions = ['make_finish' , 'export_admin_action']
+    actions = ['make_finish' , 'export_admin_action' , 'make_risk']
+
+    def occult_Tf_status_colored(self , obj):
+        if obj.occult_Tf_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_occult_Tf_status_display( ) )
+        elif obj.occult_Tf_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_occult_Tf_status_display( ) )
+        else:
+            return obj.get_occult_Tf_status_display( )
+
+    occult_Tf_status_colored.short_description = "潜血双联-Tf状态"
+
+    def occult_Hb_status_colored(self , obj):
+        if obj.occult_Hb_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_occult_Hb_status_display( ) )
+        elif obj.occult_Hb_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_occult_Hb_status_display( ) )
+        else:
+            return obj.get_occult_Hb_status_display( )
+
+    occult_Hb_status_colored.short_description = "潜血双联-Hb状态"
+
+    def hp_status_colored(self , obj):
+        if obj.hp_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_hp_status_display( ) )
+        elif obj.hp_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_hp_status_display( ) )
+        else:
+            return obj.get_hp_status_display( )
+
+    hp_status_colored.short_description = "幽门螺旋杆菌抗原状态"
+
+    def calprotectin_status_colored(self , obj):
+        if obj.calprotectin_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_calprotectin_status_display( ) )
+        elif obj.calprotectin_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_calprotectin_status_display( ) )
+        else:
+            return obj.get_calprotectin_status_display( )
+
+    calprotectin_status_colored.short_description = "钙卫蛋白状态"
+
+    def ph_value_status_colored(self , obj):
+        if obj.ph_value_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_ph_value_status_display( ) )
+        elif obj.ph_value_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_ph_value_status_display( ) )
+        else:
+            return obj.get_ph_value_status_display( )
+
+    ph_value_status_colored.short_description = "PH值状态"
 
     def get_readonly_fields(self , request , obj=None):
         # 根据 obj 是否为空来判断,修改数据时不能修改样本编号，
@@ -246,28 +345,33 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     unusual_low = conventional_unusual.low
                 obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                 if obj_progress.is_cgzb:
-                    obj_progress.cgzb_testing_date = datetime.date.today( )
-                    obj_progress.cgzb_testing_staff = request.user.last_name + ' ' + request.user.first_name
-                    obj_progress.save( )
-                    obj.is_status = 2  # 2是标记为完成的
+                    obj.is_status = 1  # 1是标记为完成的
                     obj.save( )
                     ''' 整理异常检测结果 '''
                     for key , status in {"occult_Tf": obj.occult_Tf_status , "occult_Hb": obj.occult_Hb_status ,
                                          "calprotectin": obj.calprotectin_status , "hp": obj.hp_status}.items( ):
-                        if status == 1:
+                        if status == 0:
                             unusual_high = "%s,%s,%s,%s;" % (
                                 unusual_high , obj.carbon_source.name , obj.genus.china_name ,
                                 ConventionalIndex._meta.get_field( key ).verbose_name)
+                            '''MetaRiskIndexes   GutRiskIndexes信息新增一条'''
+                            if obj.carbon_source.name == "粪便":
+                                create_risk( obj , key , ConventionalIndex , "偏高" , False )
                     if obj.ph_value_status != 1:
                         if obj.ph_value_status == 0:
-                            unusual_high = "%s;%s,%s,%s;" % (
+                            unusual_high = "%s,%s,%s,%s;" % (
                                 unusual_high , obj.carbon_source.name , obj.genus.china_name ,
                                 ConventionalIndex._meta.get_field( "ph_value" ).verbose_name)
+                            if obj.carbon_source.name == "粪便":
+                                create_risk( obj , "ph_value" , ConventionalIndex , "偏高" )
                         else:
-                            unusual_low = "%s;%s,%s,%s;" % (
+                            unusual_low = "%s,%s,%s,%s;" % (
                                 unusual_low , obj.carbon_source.name , obj.genus.china_name ,
                                 ConventionalIndex._meta.get_field(
                                     "ph_value" ).verbose_name)
+                            if obj.carbon_source.name == "粪便":
+                                create_risk( obj , "ph_value" , ConventionalIndex , "偏低" )
+
                     ''' 把异常检测结果存到数据库中 '''
                     conventional_unusual.high = unusual_high
                     conventional_unusual.low = unusual_low
@@ -280,6 +384,82 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
 
     make_finish.short_description = '1标记完成'
+
+    def make_risk(self , request , queryset):
+        '''代谢水平判读'''
+        risk_items = RiskItem.objects.filter( risk_type_number = "FXDL0002" ,
+                                              check_type_number = "JCDL0002" )  # 代谢水平判读; 常规指标项
+        meta_risk = get_meta_risk( risk_items )
+        '''肠道免疫'''
+        risk_items = RiskItem.objects.filter( risk_type_number = "FXDL0003" ,
+                                              check_type_number = "JCDL0002" )  # 代谢水平判读; 常规指标项
+        gut_risk = get_meta_risk( risk_items )
+        i = 0  # 提交成功的数据
+        n = 0  # 提交过的数量
+        t = 0  # 选中状态
+        for obj in queryset:
+            t += 1
+            if obj.is_status == 1:
+                '''修改初始化偏高，偏低的异常状态的数值'''
+                meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                if meta_risk_indexes.count( ) > 0:
+                    for meta_risk_index in meta_risk_indexes:
+                        if meta_risk_index.index_name in meta_risk:
+                            if meta_risk_index.is_status == "偏高":
+                                meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
+                                                                                         isk_type_number = "FXDL0002" ,
+                                                                                         index_name = meta_risk_index.index_name ).high_value
+                                meta_risk_index.fat = RiskItemDefault.objects.get( risk_name = "肥胖" ,
+                                                                                   risk_type_number = "FXDL0002" ,
+                                                                                   index_name = meta_risk_index.index_name ).high_value
+                            elif meta_risk_index.is_status == "偏低":
+                                meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
+                                                                                         risk_type_number = "FXDL0002" ,
+                                                                                         index_name = meta_risk_index.index_name ).low_value
+                                meta_risk_index.fat = RiskItemDefault.objects.get( risk_name = "肥胖" ,
+                                                                                   risk_type_number = "FXDL0002" ,
+                                                                                   index_name = meta_risk_index.index_name ).low_value
+                            meta_risk_index.save( )
+                gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                if gut_risk_indexes.count( ) > 0:
+                    for gut_risk_index in gut_risk_indexes:
+                        if gut_risk_index.index_name in gut_risk:
+                            if gut_risk_index.is_status == "偏高":
+                                gut_risk_index.infection = RiskItemDefault.objects.get( risk_name = "肠道炎症" ,
+                                                                                        risk_type_number = "FXDL0003" ,
+                                                                                        index_name = gut_risk_index.index_name ).high_value
+                                gut_risk_index.scherm = RiskItemDefault.objects.get( risk_name = "肠道屏障" ,
+                                                                                     risk_type_number = "FXDL0003" ,
+                                                                                     index_name = gut_risk_index.index_name ).high_value
+                                gut_risk_index.cancer = RiskItemDefault.objects.get( risk_name = "消化道肿瘤" ,
+                                                                                     risk_type_number = "FXDL0003" ,
+                                                                                     index_name = gut_risk_index.index_name ).high_value
+                            elif gut_risk_index.is_status == "偏低":
+                                gut_risk_index.infection = RiskItemDefault.objects.get( risk_name = "肠道炎症" ,
+                                                                                        risk_type_number = "FXDL0003" ,
+                                                                                        index_name = gut_risk_index.index_name ).low_value
+                                gut_risk_index.scherm = RiskItemDefault.objects.get( risk_name = "肠道屏障" ,
+                                                                                     risk_type_number = "FXDL0003" ,
+                                                                                     index_name = gut_risk_index.index_name ).low_value
+                                gut_risk_index.cancer = RiskItemDefault.objects.get( risk_name = "消化道肿瘤" ,
+                                                                                     risk_type_number = "FXDL0003" ,
+                                                                                     index_name = gut_risk_index.index_name ).low_value
+                            gut_risk_index.save( )
+                obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
+                if obj_progress.is_cgzb:
+                    obj_progress.cgzb_testing_date = datetime.date.today( )
+                    obj_progress.cgzb_testing_staff = request.user.last_name + ' ' + request.user.first_name
+                    obj_progress.save( )
+                    obj.is_status = 2  # 2是标记为完成并判读的
+                    obj.save( )
+                    i += 1
+                else:
+                    n += 1
+            else:
+                n += 1
+        self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
+
+    make_risk.short_description = '2标记风险'
 
     def save_model(self , request , obj , form , change):
         if obj.occult_Tf is not None:
@@ -451,7 +631,7 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
     resource_class = BioChemicalIndexesResource
     form = BioChemicalIndexesForm
     # list_editable =
-    actions = ['make_finish' , 'export_admin_action']
+    actions = ['make_finish' , 'export_admin_action' , 'make_risk']
 
     def fecal_nitrogen_status_colored(self , obj):
         if obj.fecal_nitrogen_status == 0:
@@ -531,31 +711,24 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                     obj_progress.shzb_testing_date = datetime.date.today( )
                     obj_progress.shzb_testing_staff = request.user.last_name + ' ' + request.user.first_name
                     obj_progress.save( )
-                    obj.is_status = 2  # 2是标记为完成的
+                    obj.is_status = 1  # 1是标记为完成的
                     obj.save( )
                     ''' 整理异常检测结果 '''
-                    fecal_nitrogen_status = obj.fecal_nitrogen_status
-                    bile_acid_status = obj.bile_acid_status
-                    if fecal_nitrogen_status != 1:
-                        if fecal_nitrogen_status == 0:
-                            unusual_high = "%s,%s,%s,%s;" % (
-                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
-                                BioChemicalIndexes._meta.get_field( "fecal_nitrogen" ).verbose_name)
-                        else:
-                            unusual_low = "%s,%s,%s,%s;" % (
-                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
-                                BioChemicalIndexes._meta.get_field(
-                                    "fecal_nitrogen" ).verbose_name)
-                    if bile_acid_status != 1:
-                        if bile_acid_status == 0:
-                            unusual_high = "%s,%s,%s,%s;" % (
-                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
-                                BioChemicalIndexes._meta.get_field( "bile_acid" ).verbose_name)
-                        else:
-                            unusual_low = "%s,%s,%s,%s;" % (
-                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
-                                BioChemicalIndexes._meta.get_field(
-                                    "bile_acid" ).verbose_name)
+                    for key , status in {"fecal_nitrogen": obj.fecal_nitrogen_status ,
+                                         "bile_acid": obj.bile_acid_status}.items( ):
+                        if status != 1:
+                            if status == 0:
+                                unusual_high = "%s,%s,%s,%s;" % (
+                                    unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                    BioChemicalIndexes._meta.get_field( key ).verbose_name)
+                                if obj.carbon_source.name == "粪便":
+                                    create_risk( obj , key , BioChemicalIndexes , "偏高" , False )
+                            else:
+                                unusual_low = "%s,%s,%s,%s;" % (
+                                    unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                    BioChemicalIndexes._meta.get_field( key ).verbose_name)
+                                if obj.carbon_source.name == "粪便":
+                                    create_risk( obj , key , BioChemicalIndexes , "偏低" , False )
                     ''' 把异常检测结果存到数据库中 '''
                     bio_unusual.high = unusual_high
                     bio_unusual.low = unusual_low
@@ -568,6 +741,54 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
         self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
 
     make_finish.short_description = '1标记完成'
+
+    def make_risk(self , request , queryset):
+        '''代谢水平判读'''
+        risk_items = RiskItem.objects.filter( risk_type_number = "FXDL0002" ,
+                                              check_type_number = "JCDL0003" )  # 代谢水平判读; 生化指标项
+        meta_risk = get_meta_risk( risk_items )
+        i = 0  # 提交成功的数据
+        n = 0  # 提交过的数量
+        t = 0  # 选中状态
+        for obj in queryset:
+            t += 1
+            if obj.is_status == 1:
+                '''修改初始化偏高，偏低的异常状态的数值'''
+                meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                if meta_risk_indexes.count( ) > 0:
+                    for meta_risk_index in meta_risk_indexes:
+                        if meta_risk_index.index_name in meta_risk:
+                            if meta_risk_index.is_status == "偏高":
+
+                                meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
+                                                                                         risk_type_number = "FXDL0002" ,
+                                                                                         index_name = meta_risk_index.index_name ).high_value
+                                meta_risk_index.fat = RiskItemDefault.objects.get( risk_name = "肥胖" ,
+                                                                                   risk_type_number = "FXDL0002" ,
+                                                                                   index_name = meta_risk_index.index_name ).high_value
+                            elif meta_risk_index.is_status == "偏低":
+                                meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
+                                                                                         risk_type_number = "FXDL0002" ,
+                                                                                         index_name = meta_risk_index.index_name ).low_value
+                                meta_risk_index.fat = RiskItemDefault.objects.get( risk_name = "肥胖" ,
+                                                                                   risk_type_number = "FXDL0002" ,
+                                                                                   index_name = meta_risk_index.index_name ).low_value
+                            meta_risk_index.save( )
+                obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
+                if obj_progress.is_cgzb:
+                    obj_progress.shzb_testing_date = datetime.date.today( )
+                    obj_progress.shzb_testing_staff = request.user.last_name + ' ' + request.user.first_name
+                    obj_progress.save( )
+                    obj.is_status = 2  # 2是标记为完成并判读的
+                    obj.save( )
+                    i += 1
+                else:
+                    n += 1
+            else:
+                n += 1
+        self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
+
+    make_risk.short_description = '2标记风险'
 
     def save_model(self , request , obj , form , change):
         if obj.fecal_nitrogen is not None:
@@ -733,22 +954,32 @@ class QpcrIndexesForm( forms.ModelForm ):
 class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
         'id' , 'sample_number' , 'carbon_source' , 'genus' , 'ct' , 'concentration' , 'concentration_reference_range' ,
-        'concentration_status' , 'formula_number' , 'is_status')
+        'concentration_status_colored' , 'formula_number' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ('-sample_number' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 38
-    list_filter = ('is_status' ,)
+    list_filter = ('is_status' , 'carbon_source')
     search_fields = ('sample_number' ,)
     resource_class = QpcrIndexesResource
     form = QpcrIndexesForm
     # list_editable =
-    actions = ['make_finish' , 'export_admin_action']
+    actions = ['make_finish' , 'export_admin_action' , 'make_risk']
     fields = (
         'sample_number' , 'carbon_source' , 'genus' , 'ct' , 'concentration' , 'concentration_reference_range' ,
         'concentration_status' ,
         'formula_number' , 'is_status')
+
+    def concentration_status_colored(self , obj):
+        if obj.concentration_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_concentration_status_display( ) )
+        elif obj.concentration_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_concentration_status_display( ) )
+        else:
+            return obj.get_concentration_status_display( )
+
+    concentration_status_colored.short_description = "浓度状态"
 
     def get_readonly_fields(self , request , obj=None):
         # 根据 obj 是否为空来判断,修改数据时不能修改样本编号，
@@ -809,7 +1040,7 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     obj_progress.qPCR_testing_date = datetime.date.today( )
                     obj_progress.qPCR_testing_staff = request.user.last_name + ' ' + request.user.first_name
                     obj_progress.save( )
-                    obj.is_status = 2  # 2是标记为完成的
+                    obj.is_status = 1  # 1是标记为完成的
                     obj.save( )
                     ''' 整理异常检测结果 '''
                     concentration_status = obj.concentration_status
@@ -818,11 +1049,15 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                             unusual_high = "%s,%s,%s,%s;" % (
                                 unusual_high , obj.carbon_source.name , obj.genus.china_name ,
                                 QpcrIndexes._meta.get_field( "concentration" ).verbose_name)
+                            if obj.carbon_source.name == "粪便":
+                                create_risk( obj , "concentration" , QpcrIndexes , "偏高" , True )
                         else:
                             unusual_low = "%s,%s,%s,%s;" % (
                                 unusual_low , obj.carbon_source.name , obj.genus.china_name ,
                                 QpcrIndexes._meta.get_field(
                                     "concentration" ).verbose_name)
+                            if obj.carbon_source.name == "粪便":
+                                create_risk( obj , "concentration" , QpcrIndexes , "偏低" , True )
                     ''' 把异常检测结果存到数据库中 '''
                     qpcr_unusual.high = unusual_high
                     qpcr_unusual.low = unusual_low
@@ -835,6 +1070,82 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
 
     make_finish.short_description = '1标记完成'
+
+    def make_risk(self , request , queryset):
+        '''代谢水平判读'''
+        risk_items = RiskItem.objects.filter( risk_type_number = "FXDL0002" ,
+                                              check_type_number = "JCDL0004" )  # 代谢水平判读; qpcr指标项
+        meta_risk = get_meta_risk( risk_items )
+        '''肠道免疫'''
+        risk_items = RiskItem.objects.filter( risk_type_number = "FXDL0003" ,
+                                              check_type_number = "JCDL0004" )  # 代谢水平判读; 常规指标项
+        gut_risk = get_meta_risk( risk_items )
+        i = 0  # 提交成功的数据
+        n = 0  # 提交过的数量
+        t = 0  # 选中状态
+        for obj in queryset:
+            t += 1
+            if obj.is_status == 1:
+                '''修改初始化偏高，偏低的异常状态的数值'''
+                meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                if meta_risk_indexes.count( ) > 0:
+                    for meta_risk_index in meta_risk_indexes:
+                        if meta_risk_index.index_name in meta_risk:
+                            if meta_risk_index.is_status == "偏高":
+                                meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
+                                                                                         risk_type_number = "FXDL0002" ,
+                                                                                         index_name = meta_risk_index.index_name ).high_value
+                                meta_risk_index.fat = RiskItemDefault.objects.get( risk_name = "肥胖" ,
+                                                                                   risk_type_number = "FXDL0002" ,
+                                                                                   index_name = meta_risk_index.index_name ).high_value
+                            elif meta_risk_index.is_status == "偏低":
+                                meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
+                                                                                         risk_type_number = "FXDL0002" ,
+                                                                                         index_name = meta_risk_index.index_name ).low_value
+                                meta_risk_index.fat = RiskItemDefault.objects.get( risk_name = "肥胖" ,
+                                                                                   risk_type_number = "FXDL0002" ,
+                                                                                   index_name = meta_risk_index.index_name ).low_value
+                            meta_risk_index.save( )
+                gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                if gut_risk_indexes.count( ) > 0:
+                    for gut_risk_index in gut_risk_indexes:
+                        if gut_risk_index.index_name in gut_risk:
+                            if gut_risk_index.is_status == "偏高":
+                                gut_risk_index.infection = RiskItemDefault.objects.get( risk_name = "肠道炎症" ,
+                                                                                        risk_type_number = "FXDL0003" ,
+                                                                                        index_name = meta_risk_index.index_name ).high_value
+                                gut_risk_index.scherm = RiskItemDefault.objects.get( risk_name = "肠道屏障" ,
+                                                                                     risk_type_number = "FXDL0003" ,
+                                                                                     index_name = meta_risk_index.index_name ).high_value
+                                gut_risk_index.cancer = RiskItemDefault.objects.get( risk_name = "消化道肿瘤" ,
+                                                                                     risk_type_number = "FXDL0003" ,
+                                                                                     index_name = meta_risk_index.index_name ).high_value
+                            elif gut_risk_index.is_status == "偏低":
+                                gut_risk_index.infection = RiskItemDefault.objects.get( risk_name = "肠道炎症" ,
+                                                                                        risk_type_number = "FXDL0003" ,
+                                                                                        index_name = meta_risk_index.index_name ).low_value
+                                gut_risk_index.scherm = RiskItemDefault.objects.get( risk_name = "肠道屏障" ,
+                                                                                     risk_type_number = "FXDL0003" ,
+                                                                                     index_name = meta_risk_index.index_name ).low_value
+                                gut_risk_index.cancer = RiskItemDefault.objects.get( risk_name = "消化道肿瘤" ,
+                                                                                     risk_type_number = "FXDL0003" ,
+                                                                                     index_name = meta_risk_index.index_name ).low_value
+                            gut_risk_index.save( )
+                obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
+                if obj_progress.is_cgzb:
+                    obj_progress.qPCR_testing_date = datetime.date.today( )
+                    obj_progress.qPCR_testing_staff = request.user.last_name + ' ' + request.user.first_name
+                    obj_progress.save( )
+                    obj.is_status = 2  # 2是标记为完成并判读的
+                    obj.save( )
+                    i += 1
+                else:
+                    n += 1
+            else:
+                n += 1
+        self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
+
+    make_risk.short_description = '2标记风险'
 
     def get_changeform_initial_data(self , request):
         initial = super( ).get_changeform_initial_data( request )
@@ -1157,25 +1468,104 @@ class ScfasIndexesResource( resources.ModelResource ):
 @admin.register( ScfasIndexes )
 class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('id' , 'sample_number' , 'carbon_source' , 'genus' ,
-                    'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
-                    'isovaleric' ,
-                    'acid_first' , 'acid_second' , 'is_status')
+                    'total_acid_status_colored' , 'acetic_acid_status_colored' , 'propionic_status_colored' , 'butyric_status_colored' ,
+                    'isobutyric_acid_status_colored' , 'valeric_status_colored' ,
+                    'isovaleric_status_colored' ,
+                    'acid_first_status_colored' , 'acid_second_status_colored' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ('-sample_number' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    list_filter = ('is_status' ,)
+    list_filter = ('is_status' , 'carbon_source')
     search_fields = ('sample_number' ,)
     import_export_args = {'import_resource_class': ScfasIndexesResource , 'export_resource_class': ScfasIndexesResource}
     resource_class = ScfasIndexesResource
     # form =
     # list_editable =
-    actions = ['make_finish' , 'export_admin_action']
+    actions = ['make_finish' , 'export_admin_action' , 'make_risk']
     exclude = (
         'isovaleric1' , 'isovaleric1_status' , 'isovaleric1_reference_range' , 'isovaleric2' , 'isovaleric2_status' ,
         'isovaleric2_reference_range' , 'isovaleric3' , 'isovaleric3_status' , 'isovaleric3_reference_range' ,
         'carbon_source_zh' , 'genus_zh')
+
+    def total_acid_status_colored(self , obj):
+        if obj.total_acid_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_total_acid_status_display( ) )
+        elif obj.total_acid_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_total_acid_status_display( ) )
+        else:
+            return obj.get_total_acid_status_display( )
+
+    total_acid_status_colored.short_description = "总酸状态"
+
+    def acetic_acid_status_colored(self , obj):
+        if obj.acetic_acid_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_acetic_acid_status_display( ) )
+        elif obj.acetic_acid_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_acetic_acid_status_display( ) )
+        else:
+            return obj.get_acetic_acid_status_display( )
+
+    acetic_acid_status_colored.short_description = "乙酸状态"
+
+    def propionic_status_colored(self , obj):
+        if obj.total_acid_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_total_acid_status_display( ) )
+        elif obj.total_acid_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_total_acid_status_display( ) )
+        else:
+            return obj.get_total_acid_status_display( )
+    propionic_status_colored.short_description = "丙酸状态"
+
+    def butyric_status_colored(self , obj):
+        if obj.butyric_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_butyric_status_display( ) )
+        elif obj.butyric_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_butyric_status_display( ) )
+        else:
+            return obj.get_butyric_status_display( )
+    butyric_status_colored.short_description = "丁酸状态"
+    def isobutyric_acid_status_colored(self , obj):
+        if obj.isobutyric_acid_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_isobutyric_acid_status_display( ) )
+        elif obj.isobutyric_acid_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_isobutyric_acid_status_display( ) )
+        else:
+            return obj.get_isobutyric_acid_status_display( )
+    isobutyric_acid_status_colored.short_description = "异丁酸状态"
+    def valeric_status_colored(self , obj):
+        if obj.valeric_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_valeric_status_display( ) )
+        elif obj.valeric_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_valeric_status_display( ) )
+        else:
+            return obj.get_valeric_status_display( )
+    valeric_status_colored.short_description = "戊酸状态"
+    def isovaleric_status_colored(self , obj):
+        if obj.isovaleric_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_isovaleric_status_display( ) )
+        elif obj.isovaleric_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_isovaleric_status_display( ) )
+        else:
+            return obj.get_isovaleric_status_display( )
+    isovaleric_status_colored.short_description = "异戊酸状态"
+    def acid_first_status_colored(self , obj):
+        if obj.acid_first_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_acid_first_status_display( ) )
+        elif obj.acid_first_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_acid_first_status_display( ) )
+        else:
+            return obj.get_acid_first_status_display( )
+    acid_first_status_colored.short_description = "乙丙丁酸占总酸比状态"
+    def acid_second_status_colored(self , obj):
+        if obj.acid_second_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_acid_second_status_display( ) )
+        elif obj.acid_second_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_acid_second_status_display( ) )
+        else:
+            return obj.get_acid_second_status_display( )
+    acid_second_status_colored.short_description = "异丁戊异戊占总酸比"
 
     def get_readonly_fields(self , request , obj=None):
         # 根据 obj 是否为空来判断,修改数据时不能修改样本编号，
@@ -1232,30 +1622,27 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     obj_progress.SCFAs_testing_date = datetime.date.today( )
                     obj_progress.SCFAs_testing_staff = request.user.last_name + ' ' + request.user.first_name
                     obj_progress.save( )
-                    obj.is_status = 2  # 2是标记为完成的
+                    obj.is_status = 1  # 1是标记为完成的
                     obj.save( )
                     ''' 整理异常检测结果 '''
-                    for key , status in {"total_acid": obj.total_acid_status , "acetic_acid": obj.acetic_acid_status ,
+                    for key , status in {"acetic_acid": obj.acetic_acid_status ,
                                          "propionic": obj.propionic_status , "butyric": obj.butyric_status ,
                                          "isobutyric_acid": obj.isobutyric_acid_status ,
                                          "valeric": obj.valeric_status ,
-                                         "isovaleric": obj.isovaleric_status , "acid_first": obj.acid_first_status ,
-                                         "acid_second": obj.acid_second_status ,
-                                         "acetic_acid_ratio": obj.acetic_acid_ratio_status ,
-                                         "propionic_ratio": obj.propionic_ratio_status ,
-                                         "butyric_ratio": obj.butyric_ratio_status ,
-                                         "isobutyric_acid_ratio": obj.isobutyric_acid_ratio_status ,
-                                         "valeric_ratio": obj.valeric_ratio_status ,
-                                         "isovaleric_ratio": obj.isovaleric_ratio_status}.items( ):
+                                         "isovaleric": obj.isovaleric_status}.items( ):
                         if status != 1:
                             if status == 0:
                                 unusual_high = "%s,%s,%s,%s;" % (
                                     unusual_high , obj.carbon_source.name , obj.genus.china_name ,
                                     ScfasIndexes._meta.get_field( key ).verbose_name)
+                                if obj.carbon_source.name == "粪便":
+                                    create_risk( obj , key , ScfasIndexes , "偏高" , False )
                             else:
                                 unusual_low = "%s,%s,%s,%s;" % (
                                     unusual_low , obj.carbon_source.name , obj.genus.china_name ,
                                     ScfasIndexes._meta.get_field( key ).verbose_name)
+                                if obj.carbon_source.name == "粪便":
+                                    create_risk( obj , key , ScfasIndexes , "偏低" , False )
                     ''' 把异常检测结果存到数据库中 '''
                     scfas_unusual.high = unusual_high
                     scfas_unusual.low = unusual_low
@@ -1268,7 +1655,54 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 n += 1
         self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
 
-    make_finish.short_description = '2标记完成'
+    make_finish.short_description = '1标记完成'
+
+    def make_risk(self , request , queryset):
+        '''代谢水平判读'''
+        risk_items = RiskItem.objects.filter( risk_type_number = "FXDL0002" ,
+                                              check_type_number = "JCDL0005" )  # 代谢水平判读; SCFAs指标项
+        meta_risk = get_meta_risk( risk_items )
+        i = 0  # 提交成功的数据
+        n = 0  # 提交过的数量
+        t = 0  # 选中状态
+        for obj in queryset:
+            t += 1
+            if obj.is_status == 1:
+                '''修改初始化偏高，偏低的异常状态的数值'''
+                meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                if meta_risk_indexes.count( ) > 0:
+                    for meta_risk_index in meta_risk_indexes:
+                        if meta_risk_index.index_name in meta_risk:
+                            if meta_risk_index.is_status == "偏高":
+                                meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
+                                                                                         risk_type_number = "FXDL0002" ,
+                                                                                         index_name = meta_risk_index.index_name ).high_value
+                                meta_risk_index.fat = RiskItemDefault.objects.get( risk_name = "肥胖" ,
+                                                                                   risk_type_number = "FXDL0002" ,
+                                                                                   index_name = meta_risk_index.index_name ).high_value
+                            elif meta_risk_index.is_status == "偏低":
+                                meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
+                                                                                         risk_type_number = "FXDL0002" ,
+                                                                                         index_name = meta_risk_index.index_name ).low_value
+                                meta_risk_index.fat = RiskItemDefault.objects.get( risk_name = "肥胖" ,
+                                                                                   risk_type_number = "FXDL0002" ,
+                                                                                   index_name = meta_risk_index.index_name ).low_value
+                            meta_risk_index.save( )
+                obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
+                if obj_progress.is_cgzb:
+                    obj_progress.SCFAs_testing_date = datetime.date.today( )
+                    obj_progress.SCFAs_testing_staff = request.user.last_name + ' ' + request.user.first_name
+                    obj_progress.save( )
+                    obj.is_status = 2  # 2是标记为完成并判读的
+                    obj.save( )
+                    i += 1
+                else:
+                    n += 1
+            else:
+                n += 1
+        self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
+
+    make_risk.short_description = '2标记风险'
 
     def save_model(self , request , obj , form , change):
 
@@ -1543,7 +1977,7 @@ class DegradationIndexesResource( resources.ModelResource ):
 @admin.register( DegradationIndexes )
 class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('sample_number' , 'carbon_source' , 'genus' ,
-                    'degradation' , 'gas' , 'is_status')
+                    'degradation_status_colored' , 'gas_status_colored' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ('-sample_number' ,)
     view_on_site = False
@@ -1555,6 +1989,26 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
     # form =
     # list_editable =
     actions = ['make_finish' , 'export_admin_action']
+
+    def degradation_status_colored(self , obj):
+        if obj.degradation_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_degradation_status_display( ) )
+        elif obj.degradation_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_degradation_status_display( ) )
+        else:
+            return obj.get_degradation_status_display( )
+
+    degradation_status_colored.short_description = "降解率状态"
+
+    def gas_status_colored(self , obj):
+        if obj.gas_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_gas_status_display( ) )
+        elif obj.gas_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_gas_status_display( ) )
+        else:
+            return obj.get_gas_status_display( )
+
+    gas_status_colored.short_description = "产气量状态"
 
     def get_readonly_fields(self , request , obj=None):
         # 根据 obj 是否为空来判断,修改数据时不能修改样本编号，
@@ -1611,31 +2065,23 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                     obj_progress.degradation_testing_date = datetime.date.today( )
                     obj_progress.degradation_testing_staff = request.user.last_name + ' ' + request.user.first_name
                     obj_progress.save( )
-                    obj.is_status = 2  # 2是标记为完成的
+                    obj.is_status = 1  # 1是标记为完成的
                     obj.save( )
                     ''' 整理异常检测结果 '''
-                    degradation_status = obj.degradation_status
-                    gas_status = obj.gas_status
-                    if gas_status != 1:
-                        if gas_status == 0:
-                            unusual_high = "%s;%s,%s,%s;" % (
-                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
-                                DegradationIndexes._meta.get_field( "gas" ).verbose_name)
-                        else:
-                            unusual_low = "%s;%s,%s,%s;" % (
-                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
-                                DegradationIndexes._meta.get_field(
-                                    "gas" ).verbose_name)
-                    if degradation_status != 1:
-                        if degradation_status == 0:
-                            unusual_high = "%s,%s,%s,%s;" % (
-                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
-                                DegradationIndexes._meta.get_field( "degradation" ).verbose_name)
-                        else:
-                            unusual_low = "%s,%s,%s,%s;" % (
-                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
-                                DegradationIndexes._meta.get_field(
-                                    "degradation" ).verbose_name)
+                    for key , status in {"degradation": obj.degradation_status , "gas": obj.gas_status}.items( ):
+                        if status != 1:
+                            if status == 0:
+                                unusual_high = "%s,%s,%s,%s;" % (
+                                    unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                    DegradationIndexes._meta.get_field( key ).verbose_name)
+                                # if obj.carbon_source.name == "粪便":   # TODO 未来需要是再取消注释
+                                #     create_risk( obj , key , DegradationIndexes , "偏高", False)
+                            else:
+                                unusual_low = "%s,%s,%s,%s;" % (
+                                    unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                    DegradationIndexes._meta.get_field( key ).verbose_name)
+                                # if obj.carbon_source.name == "粪便":  # TODO 未来需要是再取消注释
+                                #     create_risk( obj , key , DegradationIndexes , "偏低",False )
                     ''' 把异常检测结果存到数据库中 '''
                     degradation_unusual.high = unusual_high
                     degradation_unusual.low = unusual_low

@@ -57,7 +57,7 @@ class ReportsAdmin( ImportExportActionModelAdmin, admin.ModelAdmin ):
         t = 0  # 选中状态
         for obj in queryset:
             t += 1
-            if (obj.is_status < 2):
+            if (obj.is_status == 1):
                 obj.is_status = 2
                 obj.save( )
                 i += 1

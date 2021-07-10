@@ -23,7 +23,8 @@ class CTformula( models.Model ):
     formula_name = models.CharField( verbose_name = '公式名称' , max_length = 255 , blank = True , null = True )
     formula_content = models.CharField( verbose_name = '计算公式' , max_length = 255 )
     tax_name = models.CharField( verbose_name = '菌种名称' , max_length = 255 )
-    version_num = models.IntegerField( verbose_name = '版本号' , default = 1 , validators = [MinValueValidator( 0 ) , MaxValueValidator( 2000 )])
+    version_num = models.IntegerField( verbose_name = '版本号' , default = 1 ,
+                                       validators = [MinValueValidator( 0 ) , MaxValueValidator( 2000 )] )
     example_data = models.FloatField( verbose_name = "输入示例" )
     result_data = models.FloatField( verbose_name = "输出结果" )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
@@ -85,7 +86,8 @@ class Product( models.Model ):
                                  blank = True )
     check_content = models.CharField( verbose_name = '检测模块' , max_length = 255 )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now = True )
-    days = models.IntegerField( verbose_name = '周期天数' , default = 1 , validators = [MinValueValidator( 0 ) , MaxValueValidator( 200 )])
+    days = models.IntegerField( verbose_name = '周期天数' , default = 1 ,
+                                validators = [MinValueValidator( 0 ) , MaxValueValidator( 200 )] )
     historys = models.TextField( verbose_name = "历史填写日期" , blank = True , null = True )
     writer = models.CharField( verbose_name = "创建人" , max_length = 255 , blank = True , null = True )
     note = models.TextField( verbose_name = '备注' , max_length = 255 , blank = True , null = True )
@@ -151,9 +153,76 @@ class ReferenceRange( models.Model ):
         return '%s' % self.index_name
 
 
+class RiskReferenceRange( models.Model ):
+    index_name = models.CharField( verbose_name = '风险名称' , max_length = 255 )  # 实验结果就是通过这个字段进行匹配查询的
+    carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE )
+    version_num = models.IntegerField( verbose_name = '版本号' , default = 1 ,
+                                       validators = [MinValueValidator( 0 ) , MaxValueValidator( 2000 )] )
+    reference_range1 = models.CharField( verbose_name = '低风险参考值' , max_length = 255 , null = True ,
+                                         blank = True )
+    reference_range2 = models.CharField( verbose_name = '注意参考值' , max_length = 255 , null = True ,
+                                         blank = True )
+    reference_range3 = models.CharField( verbose_name = '中风险参考值' , max_length = 255 , null = True ,
+                                         blank = True )
+    reference_range4 = models.CharField( verbose_name = '高风险参考值' , max_length = 255 , null = True ,
+                                         blank = True )
+    create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
+    historys = models.TextField( verbose_name = "历史填写版本" , blank = True , null = True )
+    writer = models.CharField( verbose_name = "创建人" , max_length = 255 , blank = True , null = True )
+    note = models.TextField( verbose_name = '备注' , max_length = 255 , blank = True , null = True )
+
+    class Meta:
+        verbose_name = '风险参考范围'
+        verbose_name_plural = verbose_name
+        unique_together = ('index_name' , 'version_num')
+
+    def __str__(self):
+        return '%s' % self.index_name
+
+
+class RiskItem( models.Model ):
+    risk_type = models.CharField( verbose_name = '风险大类名称' , max_length = 255 )
+    check_type = models.CharField( verbose_name = '检测大类名称' , max_length = 255 )
+    risk_type_number = models.CharField( verbose_name = '风险大类' , max_length = 255 )
+    check_type_number = models.CharField( verbose_name = '检测大类' , max_length = 255 )
+    index_name = models.CharField( verbose_name = '指标名称' ,  max_length = 255)
+    create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
+    historys = models.TextField( verbose_name = "历史填写版本" , blank = True , null = True )
+    writer = models.CharField( verbose_name = "创建人" , max_length = 255 , blank = True , null = True )
+    note = models.TextField( verbose_name = '备注' , max_length = 255 , blank = True , null = True )
+
+    class Meta:
+        verbose_name = '风险模块'
+        verbose_name_plural = verbose_name
+        unique_together = ('risk_type' ,'check_type')
+
+    def __str__(self):
+        return '%s' % self.index_name
+
+class RiskItemDefault( models.Model ):
+    risk_type = models.CharField( verbose_name = '风险大类名称' , max_length = 255 )
+    risk_type_number = models.CharField( verbose_name = '风险大类' , max_length = 255 )
+    index_name = models.CharField( verbose_name = '指标名称' ,  max_length = 255)
+    risk_name = models.CharField( verbose_name = '风险名称' ,  max_length = 255)
+    low_value = models.FloatField(verbose_name = "偏低默认值")
+    high_value = models.FloatField( verbose_name = "偏高默认值" )
+    create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
+    historys = models.TextField( verbose_name = "历史填写版本" , blank = True , null = True )
+    writer = models.CharField( verbose_name = "创建人" , max_length = 255 , blank = True , null = True )
+    note = models.TextField( verbose_name = '备注' , max_length = 255 , blank = True , null = True )
+
+    class Meta:
+        verbose_name = '风险指标默认值'
+        verbose_name_plural = verbose_name
+        unique_together = ('risk_type_number','index_name','risk_name')
+
+    def __str__(self):
+        return '%s' % self.index_name
+
 class Template( models.Model ):
-    product_name = models.CharField( verbose_name = '模板名称' , max_length = 100 , unique = True)
-    version_num = models.IntegerField( verbose_name = '版本号' , default = 1 ,validators = [MinValueValidator( 0 ) , MaxValueValidator( 2000 )])
+    product_name = models.CharField( verbose_name = '模板名称' , max_length = 100 , unique = True )
+    version_num = models.IntegerField( verbose_name = '版本号' , default = 1 ,
+                                       validators = [MinValueValidator( 0 ) , MaxValueValidator( 2000 )] )
     upload_time = models.DateField( verbose_name = '上传时间' , blank = True , null = True , auto_now = True )
     use_count = models.IntegerField( verbose_name = '使用次数' , default = 0 )
     file_template = models.FileField( verbose_name = '模板报告' , upload_to = "uploads/template/%Y/%m" , null = True ,

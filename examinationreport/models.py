@@ -8,7 +8,7 @@ from django.core.validators import MinValueValidator , MaxValueValidator
 class Reports( models.Model ):
     STATUS_CHOICES = (
         (0 , '待处理') ,
-        (1,'完成同步'),
+        (1, '完成同步'),
         (2 , '完成报告') ,
     )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 , unique = True ) # 可以到样本管理中调整模板

@@ -33,7 +33,8 @@ class QpcrIndexesSerializer(serializers.Serializer):
     )
     TEST_CHOICES = (
         (0 , '待检测') ,
-        (2 , '完成') ,
+        (1 , '完成') ,
+        (2 , '完成并判读') ,
     )
     ct = serializers.DecimalField( max_digits = 12 , decimal_places = 4 ) 
     concentration = serializers.DecimalField( max_digits = 12 , decimal_places = 4 ) 
@@ -50,7 +51,8 @@ class ScfasIndexesSerializer(serializers.Serializer):
     )
     TEST_CHOICES = (
         (0 , '待检测') ,
-        (2 , '完成') ,
+        (1 , '完成') ,
+        (2 , '完成并判读') ,
     )
     sample_number = serializers.CharField( )
     carbon_source = CarbonSerializer(read_only = True )
@@ -103,7 +105,8 @@ class DegradationIndexesSerializer(serializers.Serializer):
     )
     TEST_CHOICES = (
         (0 , '待检测') ,
-        (2 , '完成') ,
+        (1 , '完成') ,
+        (2 , '完成并判读') ,
     )
     sample_number = serializers.CharField(  )
     carbon_source = CarbonSerializer( read_only = True)

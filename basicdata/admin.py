@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from import_export import resources
-from basicdata.models import Agent , Province , Age , CheckType
+from basicdata.models import Agent , Province , Age , CheckType , RiskItem , RiskReferenceRange , RiskItemDefault
 from basicdata.models import CTformula
 from basicdata.models import Carbon
 from basicdata.models import CheckItem
@@ -541,7 +541,7 @@ class ReferenceRangeResource( resources.ModelResource ):
         if genuss.count( ) == 0:
             raise forms.ValidationError( '菌属名称有误，请到基础数据中核实。' )
         if (row ['id'] is None) and (
-                ReferenceRange.objects.filter( index_name = row ['指标名称'] , carbon_source = carbons[0].id ,
+                ReferenceRange.objects.filter( index_name = row ['指标名称'] , carbon_source = carbons [0].id ,
                                                tax_name = row ['菌种名称'] ,
                                                version_num = row ['版本号'] ).count( ) > 0):
             raise forms.ValidationError( '名称、碳源、菌种,版本，记录内容联合唯一，不能有冲突。' )
@@ -963,4 +963,160 @@ class ProvinceAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         else:
             obj.historys = obj.historys + "\n" + "地域:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
         # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
+        obj.save( )
+
+
+class RiskReferenceRangeForm( forms.ModelForm ):
+    reference_range1 = forms.CharField( label = "低风险参考值" ,
+                                     help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                     required = True , widget = forms.TextInput(
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
+                                     error_messages = {'required': '这个字段是必填项。'} )
+    reference_range2 = forms.CharField( label = "注意参考值" ,
+                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                        required = True , widget = forms.TextInput(
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
+                                        error_messages = {'required': '这个字段是必填项。'} )
+    reference_range3 = forms.CharField( label = "中风险参考值" ,
+                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                        required = True , widget = forms.TextInput(
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
+                                        error_messages = {'required': '这个字段是必填项。'} )
+    reference_range4 = forms.CharField( label = "高风险参考值" ,
+                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                        required = True , widget = forms.TextInput(
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
+                                        error_messages = {'required': '这个字段是必填项。'} )
+
+    class Meta:
+        model = RiskReferenceRange
+        exclude = ("" ,)
+
+    def clean_reference_range1(self):
+        numbers = re.split( '[；;]' , self.cleaned_data ["reference_range1"].strip( ) )
+        if len( numbers ) > 0:
+            for number in numbers:
+                if not re.match( r'-?\d?\.?\d+~\d?\.?\d+' , number ):
+                    raise forms.ValidationError( "没有破折号~" )
+        else:
+            raise forms.ValidationError( "风险参考范围不存在" )
+        return self.cleaned_data ["reference_range1"]
+    def clean_reference_range2(self):
+        numbers = re.split( '[；;]' , self.cleaned_data ["reference_range2"].strip( ) )
+        if len( numbers ) > 0:
+            for number in numbers:
+                if not re.match( r'-?\d?\.?\d+~\d?\.?\d+' , number ):
+                    raise forms.ValidationError( "没有破折号~" )
+        else:
+            raise forms.ValidationError( "风险参考范围不存在" )
+        return self.cleaned_data ["reference_range2"]
+    def clean_reference_range3(self):
+        numbers = re.split( '[；;]' , self.cleaned_data ["reference_range3"].strip( ) )
+        if len( numbers ) > 0:
+            for number in numbers:
+                if not re.match( r'-?\d?\.?\d+~\d?\.?\d+' , number ):
+                    raise forms.ValidationError( "没有破折号~" )
+        else:
+            raise forms.ValidationError( "风险参考范围不存在" )
+        return self.cleaned_data ["reference_range3"]
+    def clean_reference_range4(self):
+        numbers = re.split( '[；;]' , self.cleaned_data ["reference_range4"].strip( ) )
+        if len( numbers ) > 0:
+            for number in numbers:
+                if not re.match(r'-?\d?\.?\d+~\d?\.?\d+',number):
+                    raise forms.ValidationError( "没有破折号~")
+        else:
+            raise forms.ValidationError( "风险参考范围不存在" )
+        return self.cleaned_data ["reference_range4"]
+
+@admin.register( RiskReferenceRange )
+class RiskReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    list_display = ('id' , 'index_name' , "create_date")
+    list_display_links = ('index_name' ,)
+    readonly_fields = ('historys' ,)
+    ordering = ('-create_date' ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    # list_filter =
+    search_fields = ('index_name' ,)
+
+    # resource_class = RiskReferenceRangeResource
+
+    form = RiskReferenceRangeForm
+    # list_editable =
+    # actions =
+
+    def get_changeform_initial_data(self , request):
+        initial = super( ).get_changeform_initial_data( request )
+        initial ['writer'] = request.user.last_name + ' ' + request.user.first_name
+        return initial
+
+    def save_model(self , request , obj , form , change):
+        if obj.historys is None:
+            obj.historys = "指标:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
+        else:
+            obj.historys = obj.historys + "\n" + "指标:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
+        obj.save( )
+
+
+@admin.register( RiskItem )
+class RiskItemAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    list_display = ('id' , 'index_name' ,'risk_type','risk_type_number','check_type' ,'check_type_number' ,"create_date")
+    list_display_links = ('index_name' ,)
+    readonly_fields = ('historys' ,)
+    ordering = ('-create_date' ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    # list_filter =
+    search_fields = ('index_name' ,)
+
+    # resource_class = ProvinceResource
+
+    # form = CheckItemForm
+    # list_editable =
+    # actions =
+
+    def get_changeform_initial_data(self , request):
+        initial = super( ).get_changeform_initial_data( request )
+        initial ['writer'] = request.user.last_name + ' ' + request.user.first_name
+        return initial
+
+    def save_model(self , request , obj , form , change):
+        if obj.historys is None:
+            obj.historys = "风险名称:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
+        else:
+            obj.historys = obj.historys + "\n" + "风险名称:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
+        obj.save( )
+
+@admin.register(RiskItemDefault)
+class RiskItemDefaultAdmin(ImportExportActionModelAdmin , admin.ModelAdmin):
+    list_display = (
+    'id' , 'index_name' , 'risk_type' , 'risk_type_number','index_name' , 'low_value','high_value', "create_date")
+    list_display_links = ('index_name' ,)
+    readonly_fields = ('historys' ,)
+    ordering = ('-create_date' ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    # list_filter =
+    search_fields = ('index_name' ,)
+
+    # resource_class = ProvinceResource
+
+    # form = CheckItemForm
+    # list_editable =
+    # actions =
+
+    def get_changeform_initial_data(self , request):
+        initial = super( ).get_changeform_initial_data( request )
+        initial ['writer'] = request.user.last_name + ' ' + request.user.first_name
+        return initial
+
+    def save_model(self , request , obj , form , change):
+        if obj.historys is None:
+            obj.historys = "风险名称:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
+        else:
+            obj.historys = obj.historys + "\n" + "风险名称:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
         obj.save( )

@@ -12,14 +12,14 @@ from docxtpl import DocxTemplate , RichText
 from import_export import resources
 from import_export.admin import ImportExportActionModelAdmin
 import tablib
-from basicdata.models import CheckItem , Agent
+from basicdata.models import CheckItem , Agent , RiskReferenceRange
 from basicdata.models import Product , Carbon , Genus , Template
 from datacenter.models import DataInformation
 from examinationreport.models import Reports
-from examinationsample.models import Checks
+from examinationsample.models import Checks , Risk
 from examinationsample.models import Progress
 from examinationsample.models import Sample
-from labinformation.models import BioChemicalIndexes , IndexesUnusual
+from labinformation.models import BioChemicalIndexes , IndexesUnusual , MetaRiskIndexes , GutRiskIndexes
 from labinformation.models import ConventionalIndex
 from labinformation.models import DegradationIndexes
 from labinformation.models import QpcrIndexes
@@ -29,6 +29,56 @@ from basicdata.admin import SciNotation  # 科学计数法的函数
 
 admin.site.empty_value_display = '-empty-'
 
+
+def get_status_risk(carbon_source , field_name , obj_field):
+    """
+    :param tax_name:
+    :param carbon_source:
+    :param objects: 实例
+    :param field_name: 字段名称
+    :param obj_field: 字段的值
+    :return:状态，参考范围
+    """
+    obj = RiskReferenceRange.objects.get( index_name = field_name ,
+                                          carbon_source = carbon_source )  # TODO 挑选一个离近期最近的对象
+    valueds = re.split( '[；;]' , obj.reference_range1.strip( "[；;]" ) )  # 低风险
+    valuezs = re.split( '[；;]' , obj.reference_range2.strip( "[；;]" ) )  # 注意
+    valuezhongs = re.split( '[；;]' , obj.reference_range3.strip( "[；;]" ) )  # 中风险
+    valuegs = re.split( '[；;]' , obj.reference_range4.strip( "[；;]" ) )  # 高风险
+    if len( valueds ) > 0:
+        for valued in valueds:
+            print(valued)
+            mi , ma = re.split( "~" , valued )
+            mi = float( mi )
+            ma = float( ma )
+            if (obj_field > mi) and (obj_field < ma):
+                obj_field_status = "低风险"
+                return obj_field_status , "%s~%s" % (mi , ma)
+    if len( valuezs ) > 0:
+        for valuez in valuezs:
+            mi , ma = re.split( "~" , valuez )
+            mi = float( mi )
+            ma = float( ma )
+            if (obj_field > mi) and (obj_field < ma):
+                obj_field_status = "注意"
+                return obj_field_status , "%s~%s" % (mi , ma)
+    if len( valuezhongs ) > 0:
+        for valuezhong in valuezhongs:
+            mi , ma = re.split( "~" , valuezhong )
+            mi = float( mi )
+            ma = float( ma )
+            if (obj_field > mi) and (obj_field < ma):
+                obj_field_status = "中风险"
+                return obj_field_status , "%s~%s" % (mi , ma)
+    if len( valuegs ) > 0:
+        for valueg in valuegs:
+            mi , ma = re.split( "~" , valueg )
+            mi = float( mi )
+            ma = float( ma )
+            if (obj_field > mi) and (obj_field < ma):
+                obj_field_status = "高风险"
+                return obj_field_status , "%s~%s" % (mi , ma)
+    return 3 , "0~0"  # 3为未知状态
 
 class ChecksForm( forms.ModelForm ):
     """
@@ -126,8 +176,8 @@ class SampleResource( resources.ModelResource ):
         for obj in iterable:
             agent = Agent.objects.get( id = obj.sample_source.id )  # 导出的表格中渠道来源列填写的是根据渠道编号
             obj.sample_source.id = agent.number
-            template = Template.objects.get( id = obj.report_template.id ) # 导出的表格中渠道来源列填写的是根据渠道编号
-            obj.report_template.id = template.product_name          #继承框架函数，增加以上4行代码
+            template = Template.objects.get( id = obj.report_template.id )  # 导出的表格中渠道来源列填写的是根据渠道编号
+            obj.report_template.id = template.product_name  # 继承框架函数，增加以上4行代码
             data.append( self.export_resource( obj ) )
 
         self.after_export( queryset , data , *args , **kwargs )
@@ -164,11 +214,11 @@ class SampleResource( resources.ModelResource ):
         row ['name'] = row ['姓名']
         row ['receive_sample'] = row ['收样人']
         row ['receive_sample_date'] = row ['收样日期']
-        row ['sample_source'] = agent.id  #转换为对象的ID进行导入
+        row ['sample_source'] = agent.id  # 转换为对象的ID进行导入
         row ['set_meal'] = row ['套餐编号']
         row ['cost'] = row ['费用']
         row ['report_date'] = row ['预计报告日期']
-        row ['report_template'] = template.id #转换为对象的ID进行导入
+        row ['report_template'] = template.id  # 转换为对象的ID进行导入
         row ['report_template_url'] = row ['报告模板地址']
         row ['note'] = row ['备注']
         if instance:
@@ -183,8 +233,8 @@ class SampleResource( resources.ModelResource ):
         agent = Agent.objects.get( id = instance.sample_source.id )  # 导入的表格中渠道来源列填写的是根据渠道编号
         instance.sample_source = agent
         instance.email = agent.email
-        product = Product.objects.get( number = instance.set_meal ) #TODO 待删除
-        instance.set_meal = product.number                          #TODO 待删除
+        product = Product.objects.get( number = instance.set_meal )  # TODO 待删除
+        instance.set_meal = product.number  # TODO 待删除
         template = Template.objects.get( id = instance.report_template.id )
         instance.report_template = template
         instance.report_template_url = template.file_template
@@ -221,10 +271,10 @@ class SampleResource( resources.ModelResource ):
 class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
         "sample_number" , 'internal_number' , 'name' , 'receive_sample' , 'receive_sample_date' , 'sample_source' ,
-        'product_name' , 'report_template' ,'report_date',
+        'product_name' , 'report_template' , 'report_date' ,
         'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ("-sample_number" ,"-receive_sample_date")
+    ordering = ("-sample_number" , "-receive_sample_date")
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
@@ -270,7 +320,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 "sample_number" , 'internal_number' , 'historys' , 'receive_sample' , 'product_name' ,
                 'report_template_url' , 'is_status')
         else:
-            self.readonly_fields = ('historys' , 'product_name' , 'report_template_url' , 'is_status','email')
+            self.readonly_fields = ('historys' , 'product_name' , 'report_template_url' , 'is_status' , 'email')
         # if request.user.is_superuser: TODO 正式上线时放开注释
         #     self.readonly_fields = ( 'product_name',)
         return self.readonly_fields
@@ -352,7 +402,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if products.count( ) != 1:
             raise forms.ValidationError( "套餐编号有问题，请核实基础数据" )
         if obj.cost is None:
-            obj.cost = products[0].price
+            obj.cost = products [0].price
         if obj.historys is None:
             obj.historys = "编号:" + obj.sample_number + ";对内编号:" + obj.internal_number + ";姓名:" + obj.name + ";时间:" \
                            + datetime.date.today( ).__str__( )
@@ -362,9 +412,9 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         obj.email = obj.sample_source.email
         if (obj.report_date is None):
             if obj.receive_sample_date is None:
-                obj.report_date = datetime.date.today( ) + datetime.timedelta( days = products[0].days )  # 当前时间加1天
+                obj.report_date = datetime.date.today( ) + datetime.timedelta( days = products [0].days )  # 当前时间加1天
             else:
-                obj.report_date = obj.receive_sample_date + datetime.timedelta( days = products[0].days )  # 当前时间加1天
+                obj.report_date = obj.receive_sample_date + datetime.timedelta( days = products [0].days )  # 当前时间加1天
         obj.save( )
         if not change:  # 新增
             # 保存样本收样的同时，保存了样本检测表，在样本检测项的表格中没有数据，则表明时第一次创建
@@ -409,7 +459,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     resource_class = ProgressResource
     # form =
     # list_editable =
-    actions = ['make_published' , 'export_admin_action']
+    actions = ['make_published' , 'export_admin_action','make_risk']
     exclude = ("kuoz1_testing_staff" , 'kuoz1_testing_date' , 'kuoz2_testing_staff' , 'kuoz2_testing_date')
 
     @staticmethod
@@ -422,7 +472,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             value = "-"
         else:
             rule = "{0:.%sf}" % point
-            value = rule.format( float(num ))
+            value = rule.format( float( num ) )
         return value
 
     @staticmethod
@@ -552,21 +602,93 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             rt = "缺失"
         return rt
 
+    def make_risk(self , request , queryset):
+        i = 0  # 提交成功的数据
+        n = 0  # 提交过的数量
+        t = 0  # 选中状态
+        for obj in queryset:
+            t += 1
+            if obj.is_status == 0:
+                '''初始化偏高，偏低的异常状态'''
+                risk,st = Risk.objects.get_or_create( sample_number = obj.sample_number )
+                meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                if meta_risk_indexes.count( ) > 0:
+                    sum_blood_fat = 0
+                    fat = 0
+                    for meta_risk_index in meta_risk_indexes:
+                        '''血脂'''
+                        sum_blood_fat = sum_blood_fat + meta_risk_index.blood_fat
+                        '''肥胖'''
+                        fat = fat + meta_risk_index.fat
+                if gut_risk_indexes.count( ) > 0:
+                    infection = 0
+                    scherm = 0
+                    cancer = 0
+                    for gut_risk_indexe in gut_risk_indexes:
+                        '''肠道炎症'''
+                        infection = infection + gut_risk_indexe.infection
+                        '''肠道屏障'''
+                        scherm = scherm + gut_risk_indexe.scherm
+                        '''消化道肿瘤'''
+                        cancer = cancer + gut_risk_indexe.cancer
+                    '''血脂'''
+                    risk.metaboilicx = float(sum_blood_fat)
+                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                    status , reference_range = get_status_risk( cb , "血脂" , sum_blood_fat )
+                    risk.metaboilicx_status = status
+                    risk.metaboilicx_reference_range = reference_range
+                    '''肥胖'''
+                    risk.metaboilicf = float(fat)
+                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                    status , reference_range = get_status_risk( cb , "肥胖" , fat )
+                    risk.metaboilicf_status = status
+                    risk.metaboilicf_reference_range = reference_range
+
+                    '''肠道炎症'''
+                    risk.gut_immunity = float(infection)
+                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                    status , reference_range = get_status_risk( cb , "肠道炎症" , infection )
+                    risk.gut_immunity_status = status
+                    risk.gut_immunity_reference_range = reference_range
+                    '''肠道屏障'''
+                    risk.gut_immunityp = float(scherm)
+                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                    status , reference_range = get_status_risk( cb , "肠道屏障" , scherm )
+                    risk.gut_immunityp_status = status
+                    risk.gut_immunityp_reference_range = reference_range
+                    '''消化道肿瘤'''
+                    risk.gut_immunityx = float(cancer)
+                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                    status , reference_range = get_status_risk( cb , "消化道肿瘤" , cancer )
+                    risk.gut_immunityx_status = status
+                    risk.gut_immunityx_reference_range = reference_range
+                    risk.save()
+                    obj.is_status = 1  # 1是标记为风险判读
+                    obj.save( )
+                    i += 1
+                else:
+                    n += 1
+            else:
+                n += 1
+        self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
+    make_risk.short_description = '1标记风险'
+
     def make_published(self , request , queryset):
         ii = 0  # 提交成功的数据
         n = 0  # 提交过的数量
         t = 0  # 选中状态
         for obj in queryset:
             t += 1
-            if obj.is_status < 1:
-                obj.is_status = 1
-                obj_progress , created = Reports.objects.get_or_create( sample_number = obj.sample_number )
+            if obj.is_status == 1:
+                obj.is_status = 2
+                obj_report , created = Reports.objects.get_or_create( sample_number = obj.sample_number )
                 sample = Sample.objects.filter( sample_number = obj.sample_number ) [0]
                 filename , suffix = os.path.splitext( sample.report_template_url )
-                obj_progress.word_report = filename + obj.sample_number + suffix  # 为避免报错，先找到数据，在赋值。
+                obj_report.word_report = filename + obj.sample_number + suffix  # 为避免报错，先找到数据，在赋值。
                 ii += 1
                 obj.save( )
-                obj_progress.save( )
+                obj_report.save( )
                 # 生成word报告
                 doc = DocxTemplate( 'media/' + str(
                     Sample.objects.get( sample_number = obj.sample_number ).report_template_url ) )  # TODO 关闭新增样本进度表
@@ -668,15 +790,21 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 jinja_env.filters ['percent1'] = self.percent_value_display1
                 jinja_env.filters ['percent3'] = self.percent_value_display3
                 jinja_env.filters ['side'] = self.side_value_display
-                unusuals = IndexesUnusual.objects.filter(sample_number = obj.sample_number)
-                data["unusuals"] = unusuals
+                unusuals = IndexesUnusual.objects.filter( sample_number = obj.sample_number )
+                data ["unusuals"] = unusuals
+                risks = Risk.objects.filter(sample_number = obj.sample_number)
+                if risks.count()==1:
+                    data ["risks"] = risks[0]
+                else:
+                    data["risks"] = None
                 doc.render( data , jinja_env )
                 doc.save( 'media/' + str( filename + obj.sample_number + suffix ) )
             else:
                 n += 1
         self.message_user( request , "选择%s条信息，完成操作%s条，不操作%s条" % (t , ii , n) , level = messages.SUCCESS )
 
-    make_published.short_description = "1出具报告"
+    make_published.short_description = "2出具报告"
+
 
 
 @admin.register( Checks )
@@ -711,3 +839,8 @@ class ChecksAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def save_model(self , request , obj , form , change):
         # obj.writer = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.save( )
+
+
+@admin.register( Risk )
+class RiskAdmin(ImportExportActionModelAdmin , admin.ModelAdmin):
+    pass
