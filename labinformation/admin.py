@@ -11,18 +11,18 @@ from labinformation.models import ConventionalIndex
 from labinformation.models import DegradationIndexes
 from labinformation.models import QpcrIndexes
 from labinformation.models import ScfasIndexes
+from examinationsample.models import Risk
 from basicdata.models import CTformula , RiskItem , RiskItemDefault
 from formula import Solver
 from basicdata.models import ReferenceRange
 from basicdata.models import Carbon
 from basicdata.models import Genus
 from django.contrib import messages
-from examinationsample.models import Progress , Sample
+from examinationsample.models import Progress , Sample , Risk
 from django.db.models.query import QuerySet
 from django.utils.html import format_html
 
 admin.site.empty_value_display = '-empty-'
-
 
 
 def get_meta_risk(risk_items):
@@ -1468,7 +1468,8 @@ class ScfasIndexesResource( resources.ModelResource ):
 @admin.register( ScfasIndexes )
 class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('id' , 'sample_number' , 'carbon_source' , 'genus' ,
-                    'total_acid_status_colored' , 'acetic_acid_status_colored' , 'propionic_status_colored' , 'butyric_status_colored' ,
+                    'total_acid_status_colored' , 'acetic_acid_status_colored' , 'propionic_status_colored' ,
+                    'butyric_status_colored' ,
                     'isobutyric_acid_status_colored' , 'valeric_status_colored' ,
                     'isovaleric_status_colored' ,
                     'acid_first_status_colored' , 'acid_second_status_colored' , 'is_status')
@@ -1516,6 +1517,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_total_acid_status_display( ) )
         else:
             return obj.get_total_acid_status_display( )
+
     propionic_status_colored.short_description = "丙酸状态"
 
     def butyric_status_colored(self , obj):
@@ -1525,15 +1527,20 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_butyric_status_display( ) )
         else:
             return obj.get_butyric_status_display( )
+
     butyric_status_colored.short_description = "丁酸状态"
+
     def isobutyric_acid_status_colored(self , obj):
         if obj.isobutyric_acid_status == 0:
             return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_isobutyric_acid_status_display( ) )
         elif obj.isobutyric_acid_status == 2:
-            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_isobutyric_acid_status_display( ) )
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' ,
+                                obj.get_isobutyric_acid_status_display( ) )
         else:
             return obj.get_isobutyric_acid_status_display( )
+
     isobutyric_acid_status_colored.short_description = "异丁酸状态"
+
     def valeric_status_colored(self , obj):
         if obj.valeric_status == 0:
             return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_valeric_status_display( ) )
@@ -1541,7 +1548,9 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_valeric_status_display( ) )
         else:
             return obj.get_valeric_status_display( )
+
     valeric_status_colored.short_description = "戊酸状态"
+
     def isovaleric_status_colored(self , obj):
         if obj.isovaleric_status == 0:
             return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_isovaleric_status_display( ) )
@@ -1549,7 +1558,9 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_isovaleric_status_display( ) )
         else:
             return obj.get_isovaleric_status_display( )
+
     isovaleric_status_colored.short_description = "异戊酸状态"
+
     def acid_first_status_colored(self , obj):
         if obj.acid_first_status == 0:
             return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_acid_first_status_display( ) )
@@ -1557,7 +1568,9 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_acid_first_status_display( ) )
         else:
             return obj.get_acid_first_status_display( )
+
     acid_first_status_colored.short_description = "乙丙丁酸占总酸比状态"
+
     def acid_second_status_colored(self , obj):
         if obj.acid_second_status == 0:
             return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_acid_second_status_display( ) )
@@ -1565,6 +1578,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_acid_second_status_display( ) )
         else:
             return obj.get_acid_second_status_display( )
+
     acid_second_status_colored.short_description = "异丁戊异戊占总酸比"
 
     def get_readonly_fields(self , request , obj=None):
@@ -1635,7 +1649,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                 unusual_high = "%s,%s,%s,%s;" % (
                                     unusual_high , obj.carbon_source.name , obj.genus.china_name ,
                                     ScfasIndexes._meta.get_field( key ).verbose_name)
-                                if obj.carbon_source.name == "粪便":
+                                if obj.carbon_source.name == "粪便":  # 对风险判读做数据处理
                                     create_risk( obj , key , ScfasIndexes , "偏高" , False )
                             else:
                                 unusual_low = "%s,%s,%s,%s;" % (
@@ -1768,7 +1782,18 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 obj.isobutyric_acid is not None) and (obj.valeric is not None) and (obj.isovaleric is not None):
             obj.total_acid = obj.acetic_acid + obj.propionic + obj.butyric + obj.isobutyric_acid + obj.valeric + \
                              obj.isovaleric
-
+            '''保存信息的时候，对糖代谢能力，便秘腹泻做判读'''
+            if obj.carbon_source.name == "粪便":
+                digestive_diarrhea = (1 + 2.97002415119877 / (obj.acetic_acid / obj.propionic) + 4.60469584970147 / (
+                            obj.acetic_acid / obj.butyric)) / (39.8959183583737 / (
+                            obj.acetic_acid / obj.isobutyric_acid) + 33.5702967741936 / (
+                                                                           obj.acetic_acid / obj.valeric) + 27.6137713653937 / (
+                                                                           obj.acetic_acid / obj.isovaleric))
+                metaboilic = obj.butyric / obj.acetic_acid
+                risk , stat = Risk.objects.get_or_create( sample_number = obj.sample_number )
+                risk.digestive_diarrhea = digestive_diarrhea
+                risk.metaboilic = metaboilic
+                risk.save()
         if (obj.acetic_acid is not None) and (obj.propionic is not None) and (obj.butyric is not None):
             obj.acid_first = (obj.acetic_acid + obj.propionic + obj.butyric) / obj.total_acid
 

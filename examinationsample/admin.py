@@ -32,9 +32,7 @@ admin.site.empty_value_display = '-empty-'
 
 def get_status_risk(carbon_source , field_name , obj_field):
     """
-    :param tax_name:
     :param carbon_source:
-    :param objects: 实例
     :param field_name: 字段名称
     :param obj_field: 字段的值
     :return:状态，参考范围
@@ -47,11 +45,10 @@ def get_status_risk(carbon_source , field_name , obj_field):
     valuegs = re.split( '[；;]' , obj.reference_range4.strip( "[；;]" ) )  # 高风险
     if len( valueds ) > 0:
         for valued in valueds:
-            print(valued)
             mi , ma = re.split( "~" , valued )
             mi = float( mi )
             ma = float( ma )
-            if (obj_field > mi) and (obj_field < ma):
+            if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "低风险"
                 return obj_field_status , "%s~%s" % (mi , ma)
     if len( valuezs ) > 0:
@@ -59,7 +56,7 @@ def get_status_risk(carbon_source , field_name , obj_field):
             mi , ma = re.split( "~" , valuez )
             mi = float( mi )
             ma = float( ma )
-            if (obj_field > mi) and (obj_field < ma):
+            if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "注意"
                 return obj_field_status , "%s~%s" % (mi , ma)
     if len( valuezhongs ) > 0:
@@ -67,7 +64,7 @@ def get_status_risk(carbon_source , field_name , obj_field):
             mi , ma = re.split( "~" , valuezhong )
             mi = float( mi )
             ma = float( ma )
-            if (obj_field > mi) and (obj_field < ma):
+            if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "中风险"
                 return obj_field_status , "%s~%s" % (mi , ma)
     if len( valuegs ) > 0:
@@ -75,10 +72,11 @@ def get_status_risk(carbon_source , field_name , obj_field):
             mi , ma = re.split( "~" , valueg )
             mi = float( mi )
             ma = float( ma )
-            if (obj_field > mi) and (obj_field < ma):
+            if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "高风险"
                 return obj_field_status , "%s~%s" % (mi , ma)
-    return 3 , "0~0"  # 3为未知状态
+    return "未知" , "0~0"  # 3为未知状态
+
 
 class ChecksForm( forms.ModelForm ):
     """
@@ -410,7 +408,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = obj.historys + "\n" + "编号:" + obj.sample_number + ";对内编号:" \
                            + obj.internal_number + ";姓名:" + obj.name + ";时间:" + datetime.date.today( ).__str__( )
         obj.email = obj.sample_source.email
-        if (obj.report_date is None):
+        if obj.report_date is None:
             if obj.receive_sample_date is None:
                 obj.report_date = datetime.date.today( ) + datetime.timedelta( days = products [0].days )  # 当前时间加1天
             else:
@@ -459,13 +457,14 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     resource_class = ProgressResource
     # form =
     # list_editable =
-    actions = ['make_published' , 'export_admin_action','make_risk']
+    actions = ['make_published' , 'export_admin_action' , 'make_risk']
     exclude = ("kuoz1_testing_staff" , 'kuoz1_testing_date' , 'kuoz2_testing_staff' , 'kuoz2_testing_date')
 
     @staticmethod
     def point_format(num , point=2):
         """
-        :param value:
+        :param point:
+        :param num:
         :return:保留小时点位数
         """
         if num is None:
@@ -578,7 +577,9 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if value is not None:
             rt = RichText( )
             rt.add( value , color = color )  # 自定义颜色'#DF0101'
-        return rt
+            return rt
+        else:
+            return "-"
 
     @staticmethod
     def side_value_display(value):
@@ -589,6 +590,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             2: '↓' ,
         }
         """
+        rt = "缺失"
         if value is not None:
             if value == 0:
                 rt = RichText( )
@@ -598,33 +600,35 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             if value == 2:
                 rt = RichText( )
                 rt.add( '↓' , color = '#ff00ff' )
-        else:
-            rt = "缺失"
         return rt
 
     def make_risk(self , request , queryset):
         i = 0  # 提交成功的数据
-        n = 0  # 提交过的数量
+        n = 0  # 提交失败的数量
         t = 0  # 选中状态
         for obj in queryset:
             t += 1
             if obj.is_status == 0:
+                sum_blood_fat = 0
+                fat = 0
+                infection = 0
+                scherm = 0
+                cancer = 0
+                digestive_diarrhea = 0
+                metaboilic = 0
                 '''初始化偏高，偏低的异常状态'''
-                risk,st = Risk.objects.get_or_create( sample_number = obj.sample_number )
+                risk , st = Risk.objects.get_or_create( sample_number = obj.sample_number )
                 meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                scfasIndexes = ScfasIndexes.objects.filter( sample_number = obj.sample_number ,
+                                                            carbon_source__name = "粪便" )
                 if meta_risk_indexes.count( ) > 0:
-                    sum_blood_fat = 0
-                    fat = 0
                     for meta_risk_index in meta_risk_indexes:
                         '''血脂'''
                         sum_blood_fat = sum_blood_fat + meta_risk_index.blood_fat
                         '''肥胖'''
                         fat = fat + meta_risk_index.fat
                 if gut_risk_indexes.count( ) > 0:
-                    infection = 0
-                    scherm = 0
-                    cancer = 0
                     for gut_risk_indexe in gut_risk_indexes:
                         '''肠道炎症'''
                         infection = infection + gut_risk_indexe.infection
@@ -632,46 +636,62 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                         scherm = scherm + gut_risk_indexe.scherm
                         '''消化道肿瘤'''
                         cancer = cancer + gut_risk_indexe.cancer
-                    '''血脂'''
-                    risk.metaboilicx = float(sum_blood_fat)
-                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
-                    status , reference_range = get_status_risk( cb , "血脂" , sum_blood_fat )
-                    risk.metaboilicx_status = status
-                    risk.metaboilicx_reference_range = reference_range
-                    '''肥胖'''
-                    risk.metaboilicf = float(fat)
-                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
-                    status , reference_range = get_status_risk( cb , "肥胖" , fat )
-                    risk.metaboilicf_status = status
-                    risk.metaboilicf_reference_range = reference_range
-
-                    '''肠道炎症'''
-                    risk.gut_immunity = float(infection)
-                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
-                    status , reference_range = get_status_risk( cb , "肠道炎症" , infection )
-                    risk.gut_immunity_status = status
-                    risk.gut_immunity_reference_range = reference_range
-                    '''肠道屏障'''
-                    risk.gut_immunityp = float(scherm)
-                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
-                    status , reference_range = get_status_risk( cb , "肠道屏障" , scherm )
-                    risk.gut_immunityp_status = status
-                    risk.gut_immunityp_reference_range = reference_range
-                    '''消化道肿瘤'''
-                    risk.gut_immunityx = float(cancer)
-                    cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
-                    status , reference_range = get_status_risk( cb , "消化道肿瘤" , cancer )
-                    risk.gut_immunityx_status = status
-                    risk.gut_immunityx_reference_range = reference_range
-                    risk.save()
-                    obj.is_status = 1  # 1是标记为风险判读
-                    obj.save( )
-                    i += 1
-                else:
-                    n += 1
+                if scfasIndexes.count( ) == 1:
+                    scfas = scfasIndexes [0]
+                    if (scfas.acetic_acid is not None) and (scfas.propionic is not None) and (
+                            scfas.butyric is not None) and (
+                            scfas.isobutyric_acid is not None) and (scfas.valeric is not None) and (
+                            scfas.isovaleric is not None):
+                        '''保存信息的时候，对糖代谢能力，便秘腹泻做判读'''
+                        if scfas.carbon_source.name == "粪便":
+                            digestive_diarrhea = (1 + 2.97002415119877 / (
+                                    scfas.acetic_acid / scfas.propionic) + 4.60469584970147 / (
+                                                          scfas.acetic_acid / scfas.butyric)) / (39.8959183583737 / (
+                                    scfas.acetic_acid / scfas.isobutyric_acid) + 33.5702967741936 / (
+                                                                                                         scfas.acetic_acid / scfas.valeric) + 27.6137713653937 / (
+                                                                                                         scfas.acetic_acid / scfas.isovaleric))  # TODO 改为公式编号
+                            metaboilic = scfas.butyric / scfas.acetic_acid
+                '''便秘腹泻判读\糖代谢判读'''
+                risk.digestive_diarrhea = digestive_diarrhea
+                risk.metaboilic = metaboilic
+                '''血脂'''
+                risk.metaboilicx = float( sum_blood_fat )
+                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                status , reference_range = get_status_risk( cb , "血脂" , sum_blood_fat )
+                risk.metaboilicx_status = status
+                risk.metaboilicx_reference_range = reference_range
+                '''肥胖'''
+                risk.metaboilicf = float( fat )
+                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                status , reference_range = get_status_risk( cb , "肥胖" , fat )
+                risk.metaboilicf_status = status
+                risk.metaboilicf_reference_range = reference_range
+                '''肠道炎症'''
+                risk.gut_immunity = float( infection )
+                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                status , reference_range = get_status_risk( cb , "肠道炎症" , infection )
+                risk.gut_immunity_status = status
+                risk.gut_immunity_reference_range = reference_range
+                '''肠道屏障'''
+                risk.gut_immunityp = float( scherm )
+                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                status , reference_range = get_status_risk( cb , "肠道屏障" , scherm )
+                risk.gut_immunityp_status = status
+                risk.gut_immunityp_reference_range = reference_range
+                '''消化道肿瘤'''
+                risk.gut_immunityx = float( cancer )
+                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                status , reference_range = get_status_risk( cb , "消化道肿瘤" , cancer )
+                risk.gut_immunityx_status = status
+                risk.gut_immunityx_reference_range = reference_range
+                risk.save( )
+                obj.is_status = 1  # 1是标记为风险判读
+                obj.save( )
+                i += 1
             else:
                 n += 1
         self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
+
     make_risk.short_description = '1标记风险'
 
     def make_published(self , request , queryset):
@@ -771,9 +791,9 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                       "carbon_source_zh"]:
                                 del degradation_data [i]
                             data [key_tmp].update( degradation_data )
-                # forms.ValidationError( data )
-                for tmp in data.values( ):
-                    DataInformation( **tmp ).save( )
+
+                # for tmp in data.values( ):
+                #     DataInformation( **tmp ).save( ) # TODO 数据中心
 
                 data.update( {'receive_sample_date': str( datetime.date.today( ) )} )
                 data.update( {'report_testing_date': str( datetime.date.today( ) )} )
@@ -792,11 +812,11 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 jinja_env.filters ['side'] = self.side_value_display
                 unusuals = IndexesUnusual.objects.filter( sample_number = obj.sample_number )
                 data ["unusuals"] = unusuals
-                risks = Risk.objects.filter(sample_number = obj.sample_number)
-                if risks.count()==1:
-                    data ["risks"] = risks[0]
+                risks = Risk.objects.filter( sample_number = obj.sample_number )
+                if risks.count( ) == 1:
+                    data ["risks"] = risks [0]
                 else:
-                    data["risks"] = None
+                    data ["risks"] = None
                 doc.render( data , jinja_env )
                 doc.save( 'media/' + str( filename + obj.sample_number + suffix ) )
             else:
@@ -804,7 +824,6 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         self.message_user( request , "选择%s条信息，完成操作%s条，不操作%s条" % (t , ii , n) , level = messages.SUCCESS )
 
     make_published.short_description = "2出具报告"
-
 
 
 @admin.register( Checks )
@@ -842,5 +861,33 @@ class ChecksAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
 
 @admin.register( Risk )
-class RiskAdmin(ImportExportActionModelAdmin , admin.ModelAdmin):
-    pass
+class RiskAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    list_display = (
+        'id' , 'sample_number' , 'digestive_constipation_status' , 'digestive_diarrhea_status' , 'metaboilic_status' ,
+        'metaboilicx_status' , 'metaboilicf_status' , 'gut_immunity_status' , 'gut_disorder_status')
+    list_display_links = ('sample_number' ,)
+    ordering = ("-sample_number" ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    # list_filter = ("is_status" ,)
+    search_fields = ('sample_number' ,)
+
+    # resource_class =
+    # form = ChecksForm
+
+    # list_editable =
+    # actions =
+
+    def get_readonly_fields(self , request , obj=None):
+        # 根据 obj 是否为空来判断,修改数据时不能修改样本接收人，
+        if obj:
+            self.readonly_fields = ('sample_number' ,)
+        else:
+            self.readonly_fields = ()
+        return self.readonly_fields
+
+    def get_changeform_initial_data(self , request):
+        initial = super( ).get_changeform_initial_data( request )
+        initial ['writer'] = request.user.last_name + ' ' + request.user.first_name
+        return initial

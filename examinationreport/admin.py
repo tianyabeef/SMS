@@ -1,4 +1,4 @@
-from django.contrib import admin,messages
+from django.contrib import admin , messages
 from django.core import serializers
 import json
 from docxtpl import DocxTemplate
@@ -12,25 +12,27 @@ from docxtpl import DocxTemplate
 from examinationsample.models import Sample , Checks
 from examinationsample.models import Progress
 from questionnairesurvey.models import Quenstion
-from labinformation.models import ConventionalIndex,QpcrIndexes,BioChemicalIndexes,ScfasIndexes,DegradationIndexes
+from labinformation.models import ConventionalIndex , QpcrIndexes , BioChemicalIndexes , ScfasIndexes , \
+    DegradationIndexes
 
 admin.site.empty_value_display = '-empty-'
 
+
 @admin.register( Reports )
-class ReportsAdmin( ImportExportActionModelAdmin, admin.ModelAdmin ):
-    list_display = ('id' , 'sample_number' , 'word_report' , 'pdf_report' , 'report_testing_date' , 'report_user','is_status')
+class ReportsAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    list_display = ( 'id' , 'sample_number' , 'word_report' , 'pdf_report' , 'report_testing_date' , 'report_user' , 'is_status')
     list_display_links = ('sample_number' ,)
     # readonly_fields = ('report_testing_date','report_user')
-    ordering =('-sample_number',)
+    ordering = ('-sample_number' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    list_filter =['is_status',]
-    search_fields = ('sample_number',)
-    #resource_class =
-    #form =
-    #list_editable =
-    actions = ['make_create','make_published']
+    list_filter = ['is_status' , ]
+    search_fields = ('sample_number' ,)
+    # resource_class =
+    # form =
+    # list_editable =
+    actions = ['make_create' , 'make_published']
 
     def make_create(self , request , queryset):
         i = 0  # 提交成功的数据
@@ -38,13 +40,13 @@ class ReportsAdmin( ImportExportActionModelAdmin, admin.ModelAdmin ):
         t = 0  # 选中状态
         for obj in queryset:
             t += 1
-            if (obj.is_status < 2):
+            if obj.is_status < 2:
                 obj.is_status = 2
                 obj.save( )
                 i += 1
-                obj_report , created =Reports.objects.get_or_create(sample_number = obj.sample_number)
+                obj_report , created = Reports.objects.get_or_create( sample_number = obj.sample_number )
                 obj_report.word_report = obj.report_template.file_template
-                obj_report.save()
+                obj_report.save( )
             else:
                 n += 1
         self.message_user( request , "选择%s条信息，完成操作%s条，不操作%s条" % (t , i , n) , level = messages.SUCCESS )
@@ -57,7 +59,7 @@ class ReportsAdmin( ImportExportActionModelAdmin, admin.ModelAdmin ):
         t = 0  # 选中状态
         for obj in queryset:
             t += 1
-            if (obj.is_status == 1):
+            if obj.is_status == 1:
                 obj.is_status = 2
                 obj.save( )
                 i += 1
@@ -71,7 +73,6 @@ class ReportsAdmin( ImportExportActionModelAdmin, admin.ModelAdmin ):
                 n += 1
         self.message_user( request , "选择%s条信息，完成操作%s条，不操作%s条" % (t , i , n) , level = messages.SUCCESS )
 
-
     make_published.short_description = "2标记完成"
 
     def get_changeform_initial_data(self , request):
@@ -80,17 +81,11 @@ class ReportsAdmin( ImportExportActionModelAdmin, admin.ModelAdmin ):
         initial ['report_testing_date'] = datetime.date.today( )
         return initial
 
-
-
     def save_model(self , request , obj , form , change):
         obj.report_user = "%s %s" % (request.user.last_name , request.user.first_name)  # 系统自动添加创建人
         obj.report_user = request.user.last_name + ' ' + request.user.first_name
         obj.report_testing_date = datetime.date.today( )
         # 先同步数据
-
-        doc = DocxTemplate( 'media/' + str(
-            Sample.objects.get( sample_number = obj.sample_number ) [
-                0].report_template_url ) )  # TODO 关闭新增样本进度表
         checkss = Checks.objects.get(
             sample_number__sample_number = obj.sample_number )  # TODO 假设不存在样本收样后，检查项为空的情况
         for checks in checkss:
@@ -147,16 +142,17 @@ class ReportsAdmin( ImportExportActionModelAdmin, admin.ModelAdmin ):
                 DataInformation( *tmp ).save( )
 
         # 生成word报告
-        doc = DocxTemplate( 'media/' + str(Sample.objects.filter(sample_number = obj.sample_number)[0].report_template_url) )
-        checks = Checks.objects.filter(sample_number__sample_number = obj.sample_number)
+        doc = DocxTemplate(
+            'media/' + str( Sample.objects.filter( sample_number = obj.sample_number ) [0].report_template_url ) )
+        checks = Checks.objects.filter( sample_number__sample_number = obj.sample_number )
 
         # quenstion = Quenstion.objects.filter(sample_number = obj.sample_number)
         # conventional_index = ConventionalIndex.objects.filter(sample_number = obj.sample_number)
         # bio_chemical_indexes = BioChemicalIndexes.objects.filter(sample_number = obj.sample_number)
         # qpcr_indexes = QpcrIndexes.objects.filter(sample_number = obj.sample_number,carbon_source = obj,genus = obj)
         # degradation_indexes = DegradationIndexes.objects.filter(sample_number = obj.sample_number,carbon_source = obj)
-        context = {'company_name': str(checks.count()) + "202年↑↑↑↑10月"}
+        context = {'company_name': str( checks.count( ) ) + "202年↑↑↑↑10月"}
         doc.render( context )
-        doc.save('media/' + str(obj.word_report)  )
+        doc.save( 'media/' + str( obj.word_report ) )
 
         obj.save( )

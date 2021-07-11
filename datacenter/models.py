@@ -106,12 +106,9 @@ class DataInformation( models.Model ):
                               blank = True )
     carbon_source_zh = models.CharField( verbose_name = '碳源中文名称' , max_length = 255 , null = True , blank = True )
     genus_zh = models.CharField( verbose_name = '菌种中文名称' , max_length = 255 , null = True , blank = True )
-
-
-
     ct = models.DecimalField( verbose_name = 'CT' , max_digits = 12 , decimal_places = 4 , null = True ,
                               blank = True )
-    concentration = models.FloatField( verbose_name = 'Qpcr浓度' , null = True , blank = True ) # TODO 数据库中的类型有问题
+    concentration = models.FloatField( verbose_name = 'Qpcr浓度' , null = True , blank = True )  # TODO 数据库中的类型有问题
     concentration_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True ,
                                                       blank = True )
     concentration_status = models.IntegerField( verbose_name = '浓度状态' , choices = STATUS_CHOICES , null = True ,
@@ -252,25 +249,3 @@ class DataInformation( models.Model ):
 
     def __str__(self):
         return '%s' % self.sample_number
-
-
-
-class Book( models.Model ):
-    title = models.CharField( max_length = 32 )
-    CHOICES = (
-        (1 , 'Python') ,
-        (2 , 'Linux') ,
-        (3 , 'Go')
-    )
-    category = models.IntegerField( choices = CHOICES )
-    pub_time = models.DateField( )
-    publisher = models.ForeignKey( to = 'Publisher' , on_delete = models.CASCADE )
-    authors = models.ManyToManyField( to = 'Author' )
-
-
-class Publisher( models.Model ):
-    title = models.CharField( max_length = 32 )
-
-
-class Author( models.Model ):
-    name = models.CharField( max_length = 32 )

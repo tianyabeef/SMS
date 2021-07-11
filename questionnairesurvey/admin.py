@@ -34,12 +34,12 @@ class QuenstionForm( forms.ModelForm ):
         model = Quenstion
         exclude = ("" ,)
 
-    def clean_age_sgement(self , exclude=None):
+    def clean_age_sgement(self):
         if Age.objects.filter( name = self.cleaned_data ["age_sgement"] ).count( ) == 0:
             raise forms.ValidationError( "年龄段在数据库中无法查询到" )
         return self.cleaned_data ["age_sgement"]
 
-    def clean_province(self , exclude=None):
+    def clean_province(self):
         if Province.objects.filter( name = self.cleaned_data ["province"] ).count( ) == 0:
             raise forms.ValidationError( "地域在数据库中无法查询到" )
         return self.cleaned_data ["province"]

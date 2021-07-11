@@ -185,7 +185,7 @@ class RiskItem( models.Model ):
     check_type = models.CharField( verbose_name = '检测大类名称' , max_length = 255 )
     risk_type_number = models.CharField( verbose_name = '风险大类' , max_length = 255 )
     check_type_number = models.CharField( verbose_name = '检测大类' , max_length = 255 )
-    index_name = models.CharField( verbose_name = '指标名称' ,  max_length = 255)
+    index_name = models.CharField( verbose_name = '指标名称' , max_length = 255 )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
     historys = models.TextField( verbose_name = "历史填写版本" , blank = True , null = True )
     writer = models.CharField( verbose_name = "创建人" , max_length = 255 , blank = True , null = True )
@@ -194,17 +194,18 @@ class RiskItem( models.Model ):
     class Meta:
         verbose_name = '风险模块'
         verbose_name_plural = verbose_name
-        unique_together = ('risk_type' ,'check_type')
+        unique_together = ('risk_type' , 'check_type')
 
     def __str__(self):
         return '%s' % self.index_name
 
+
 class RiskItemDefault( models.Model ):
     risk_type = models.CharField( verbose_name = '风险大类名称' , max_length = 255 )
     risk_type_number = models.CharField( verbose_name = '风险大类' , max_length = 255 )
-    index_name = models.CharField( verbose_name = '指标名称' ,  max_length = 255)
-    risk_name = models.CharField( verbose_name = '风险名称' ,  max_length = 255)
-    low_value = models.FloatField(verbose_name = "偏低默认值")
+    index_name = models.CharField( verbose_name = '指标名称' , max_length = 255 )
+    risk_name = models.CharField( verbose_name = '风险名称' , max_length = 255 )
+    low_value = models.FloatField( verbose_name = "偏低默认值" )
     high_value = models.FloatField( verbose_name = "偏高默认值" )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
     historys = models.TextField( verbose_name = "历史填写版本" , blank = True , null = True )
@@ -214,10 +215,11 @@ class RiskItemDefault( models.Model ):
     class Meta:
         verbose_name = '风险指标默认值'
         verbose_name_plural = verbose_name
-        unique_together = ('risk_type_number','index_name','risk_name')
+        unique_together = ('risk_type_number' , 'index_name' , 'risk_name')
 
     def __str__(self):
         return '%s' % self.index_name
+
 
 class Template( models.Model ):
     product_name = models.CharField( verbose_name = '模板名称' , max_length = 100 , unique = True )

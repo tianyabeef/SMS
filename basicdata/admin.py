@@ -968,10 +968,10 @@ class ProvinceAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
 class RiskReferenceRangeForm( forms.ModelForm ):
     reference_range1 = forms.CharField( label = "低风险参考值" ,
-                                     help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
-                                     required = True , widget = forms.TextInput(
+                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                        required = True , widget = forms.TextInput(
             attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
-                                     error_messages = {'required': '这个字段是必填项。'} )
+                                        error_messages = {'required': '这个字段是必填项。'} )
     reference_range2 = forms.CharField( label = "注意参考值" ,
                                         help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
                                         required = True , widget = forms.TextInput(
@@ -1001,6 +1001,7 @@ class RiskReferenceRangeForm( forms.ModelForm ):
         else:
             raise forms.ValidationError( "风险参考范围不存在" )
         return self.cleaned_data ["reference_range1"]
+
     def clean_reference_range2(self):
         numbers = re.split( '[；;]' , self.cleaned_data ["reference_range2"].strip( ) )
         if len( numbers ) > 0:
@@ -1010,6 +1011,7 @@ class RiskReferenceRangeForm( forms.ModelForm ):
         else:
             raise forms.ValidationError( "风险参考范围不存在" )
         return self.cleaned_data ["reference_range2"]
+
     def clean_reference_range3(self):
         numbers = re.split( '[；;]' , self.cleaned_data ["reference_range3"].strip( ) )
         if len( numbers ) > 0:
@@ -1019,15 +1021,17 @@ class RiskReferenceRangeForm( forms.ModelForm ):
         else:
             raise forms.ValidationError( "风险参考范围不存在" )
         return self.cleaned_data ["reference_range3"]
+
     def clean_reference_range4(self):
         numbers = re.split( '[；;]' , self.cleaned_data ["reference_range4"].strip( ) )
         if len( numbers ) > 0:
             for number in numbers:
-                if not re.match(r'-?\d?\.?\d+~\d?\.?\d+',number):
-                    raise forms.ValidationError( "没有破折号~")
+                if not re.match( r'-?\d?\.?\d+~\d?\.?\d+' , number ):
+                    raise forms.ValidationError( "没有破折号~" )
         else:
             raise forms.ValidationError( "风险参考范围不存在" )
         return self.cleaned_data ["reference_range4"]
+
 
 @admin.register( RiskReferenceRange )
 class RiskReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
@@ -1044,6 +1048,7 @@ class RiskReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
     # resource_class = RiskReferenceRangeResource
 
     form = RiskReferenceRangeForm
+
     # list_editable =
     # actions =
 
@@ -1062,7 +1067,8 @@ class RiskReferenceRangeAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
 
 @admin.register( RiskItem )
 class RiskItemAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id' , 'index_name' ,'risk_type','risk_type_number','check_type' ,'check_type_number' ,"create_date")
+    list_display = (
+        'id' , 'index_name' , 'risk_type' , 'risk_type_number' , 'check_type' , 'check_type_number' , "create_date")
     list_display_links = ('index_name' ,)
     readonly_fields = ('historys' ,)
     ordering = ('-create_date' ,)
@@ -1090,10 +1096,12 @@ class RiskItemAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = obj.historys + "\n" + "风险名称:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
         obj.save( )
 
-@admin.register(RiskItemDefault)
-class RiskItemDefaultAdmin(ImportExportActionModelAdmin , admin.ModelAdmin):
+
+@admin.register( RiskItemDefault )
+class RiskItemDefaultAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-    'id' , 'index_name' , 'risk_type' , 'risk_type_number','index_name' , 'low_value','high_value', "create_date")
+        'id' , 'index_name' , 'risk_type' , 'risk_type_number' , 'index_name' , 'low_value' , 'high_value' ,
+        "create_date")
     list_display_links = ('index_name' ,)
     readonly_fields = ('historys' ,)
     ordering = ('-create_date' ,)
