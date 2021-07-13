@@ -1100,7 +1100,7 @@ class RiskItemAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 @admin.register( RiskItemDefault )
 class RiskItemDefaultAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-        'id' , 'index_name' , 'risk_type' , 'risk_type_number' , 'index_name' , 'low_value' , 'high_value' ,
+        'id' , 'index_name' , 'risk_type' , 'risk_type_number' , 'low_value' , 'high_value' ,
         "create_date")
     list_display_links = ('index_name' ,)
     readonly_fields = ('historys' ,)

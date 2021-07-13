@@ -834,8 +834,8 @@ class ChecksAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    list_filter = ("is_status" ,)
-    search_fields = ('sample_number' ,)
+    # list_filter = ("is_status" ,)
+    search_fields = ('sample_number__sample_number' ,)
     # resource_class =
     form = ChecksForm
 
