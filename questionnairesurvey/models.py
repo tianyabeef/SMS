@@ -14,7 +14,7 @@ class Quenstion( models.Model ):
         (0 , '待录入') ,
         (1 , '完成') ,
     )
-    sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )  # 需要样本录入后才能有问卷信息
+    sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 , unique = True )  # 需要样本录入后才能有问卷信息
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     carbon_source_zh = models.CharField(verbose_name = '碳源中文名称' , max_length = 255, null = True , blank = True)

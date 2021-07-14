@@ -88,7 +88,7 @@ class QuenstionResource( resources.ModelResource ):
             raise forms.ValidationError( '碳源名称有误，请到基础数据中核实。' )
         if genuss.count( ) == 0:
             raise forms.ValidationError( '菌属名称有误，请到基础数据中核实。' )
-        if (row ['id'] is None) and (
+        if (row ['id'] is None) and (    # TODO 样本编号已经设置唯一，联合唯一有待删除
                 Quenstion.objects.filter( sample_number = row ['样本编号'] , carbon_source = row ['碳源'] ,
                                           genus = row ['菌种'] ).count( ) > 0):
             raise forms.ValidationError( '样本编号、碳源、菌种 记录内容联合唯一，不能有冲突。' )
@@ -226,7 +226,7 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     obj_progress.wjxx_testing_date = datetime.date.today( )
                     obj_progress.wjxx_testing_staff = request.user.last_name + ' ' + request.user.first_name
                     obj_progress.save( )
-                    obj.is_status = 2  # 2是标记为完成的
+                    obj.is_status = 1  # 1是标记为完成的
                     obj.save( )
                     i += 1
                 else:
