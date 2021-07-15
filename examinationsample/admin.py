@@ -644,16 +644,29 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                             scfas.isovaleric is not None):
                         '''保存信息的时候，对糖代谢能力，便秘腹泻做判读'''
                         if scfas.carbon_source.name == "粪便":
-                            digestive_diarrhea = (1 + 2.97002415119877 / (
-                                    scfas.acetic_acid / scfas.propionic) + 4.60469584970147 / (
-                                                          scfas.acetic_acid / scfas.butyric)) / (39.8959183583737 / (
-                                    scfas.acetic_acid / scfas.isobutyric_acid) + 33.5702967741936 / (
-                                                                                                         scfas.acetic_acid / scfas.valeric) + 27.6137713653937 / (
-                                                                                                         scfas.acetic_acid / scfas.isovaleric))  # TODO 改为公式编号
-                            metaboilic = scfas.butyric / scfas.acetic_acid
+                            digestive_constipation = (1 + 2.97002415119877 / (
+                                    float(scfas.acetic_acid) / float(scfas.propionic)) + 4.60469584970147 / (
+                                                          float(scfas.acetic_acid) / float(scfas.butyric))) / (39.8959183583737 / (
+                                    float(scfas.acetic_acid) / float(scfas.isobutyric_acid)) + 33.5702967741936 / (
+                                                                                                         float(scfas.acetic_acid) / float(scfas.valeric)) + 27.6137713653937 / (
+                                                                                                         float(scfas.acetic_acid) / float(scfas.isovaleric)))  # TODO 改为公式编号
+                            metaboilic = float(scfas.butyric) / float(scfas.acetic_acid)
                 '''便秘腹泻判读\糖代谢判读'''
-                risk.digestive_diarrhea = digestive_diarrhea
+                risk.digestive_constipation = digestive_constipation
+                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                status , reference_range = get_status_risk( cb , "便秘" , digestive_constipation )
+                risk.digestive_constipation_status = status
+                risk.digestive_constipation_reference_range = reference_range
+                risk.digestive_diarrhea = digestive_constipation
+                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                status , reference_range = get_status_risk( cb , "便秘" , digestive_diarrhea )
+                risk.digestive_diarrhea_status = status
+                risk.digestive_diarrhea_reference_range = reference_range
                 risk.metaboilic = metaboilic
+                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
+                status , reference_range = get_status_risk( cb , "腹泻" , metaboilic )
+                risk.metaboilic_status = status
+                risk.metaboilic_reference_range = reference_range
                 '''血脂'''
                 risk.metaboilicx = float( sum_blood_fat )
                 cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围

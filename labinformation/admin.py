@@ -44,30 +44,30 @@ def create_risk(obj , key , key_obj , low_or_high , QpcrIndexes=False):
     """
     if QpcrIndexes:
         MetaRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
-                                        carbon_source = obj.carbon_source ,
-                                        genus = obj.genus ,
-                                        index_name = obj.genus_zh ,
-                                        is_status = low_or_high ,
-                                        blood_fat = 0 , fat = 0 )
+                                               carbon_source = obj.carbon_source ,
+                                               genus = obj.genus ,
+                                               index_name = obj.genus_zh ,
+                                               is_status = low_or_high ,
+                                               blood_fat = 0 , fat = 0 )
         GutRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
-                                       carbon_source = obj.carbon_source ,
-                                       genus = obj.genus ,
-                                       index_name = obj.genus_zh ,
-                                       is_status = low_or_high ,
-                                       infection = 0 , scherm = 0 , cancer = 0 )
+                                              carbon_source = obj.carbon_source ,
+                                              genus = obj.genus ,
+                                              index_name = obj.genus_zh ,
+                                              is_status = low_or_high ,
+                                              infection = 0 , scherm = 0 , cancer = 0 )
     else:
         MetaRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
-                                        carbon_source = obj.carbon_source ,
-                                        genus = obj.genus ,
-                                        index_name = key_obj._meta.get_field( key ).verbose_name ,
-                                        is_status = low_or_high ,
-                                        blood_fat = 0 , fat = 0 )
+                                               carbon_source = obj.carbon_source ,
+                                               genus = obj.genus ,
+                                               index_name = key_obj._meta.get_field( key ).verbose_name ,
+                                               is_status = low_or_high ,
+                                               blood_fat = 0 , fat = 0 )
         GutRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
-                                       carbon_source = obj.carbon_source ,
-                                       genus = obj.genus ,
-                                       index_name = key_obj._meta.get_field( key ).verbose_name ,
-                                       is_status = low_or_high ,
-                                       infection = 0 , scherm = 0 , cancer = 0 )
+                                              carbon_source = obj.carbon_source ,
+                                              genus = obj.genus ,
+                                              index_name = key_obj._meta.get_field( key ).verbose_name ,
+                                              is_status = low_or_high ,
+                                              infection = 0 , scherm = 0 , cancer = 0 )
 
 
 def get_status(objects , carbon_source , tax_name , field_name , obj_field):
@@ -397,6 +397,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         i = 0  # 提交成功的数据
         n = 0  # 提交过的数量
         t = 0  # 选中状态
+        no_err = True  # 用户判断有误风险默认值
         for obj in queryset:
             t += 1
             if obj.is_status == 1:
@@ -404,14 +405,16 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 if meta_risk_indexes.count( ) > 0:
                     for meta_risk_index in meta_risk_indexes:
-                        riskItemDefaults = RiskItemDefault.objects.filter( risk_name = "血脂" ,
-                                                                           risk_type_number = "FXDL0002" ,
-                                                                           index_name = meta_risk_index.index_name )
-                        if riskItemDefaults.count( ) == 0:
-                            self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
-                                               level = messages.ERROR )
-                            break
                         if meta_risk_index.index_name in meta_risk:
+                            riskItemDefaults = RiskItemDefault.objects.filter( risk_name = "血脂" ,
+                                                                               risk_type_number = "FXDL0002" ,
+                                                                               index_name = meta_risk_index.index_name )
+                            if riskItemDefaults.count( ) == 0:
+                                self.message_user( request ,
+                                                   '血脂 FXDL0002 %s 风险指标默认值没有，请先在基础数据中心添加' % meta_risk_index.index_name ,
+                                                   level = messages.ERROR )
+                                no_err = False
+                                break
                             if meta_risk_index.is_status == "偏高":
                                 meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
                                                                                          isk_type_number = "FXDL0002" ,
@@ -427,18 +430,19 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                                    risk_type_number = "FXDL0002" ,
                                                                                    index_name = meta_risk_index.index_name ).low_value
                             meta_risk_index.save( )
-                            i += 1
                 gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 if gut_risk_indexes.count( ) > 0:
                     for gut_risk_index in gut_risk_indexes:
-                        riskItemDefaults = RiskItemDefault.objects.get( risk_name = "肠道炎症" ,
-                                                                                        risk_type_number = "FXDL0003" ,
-                                                                                        index_name = gut_risk_index.index_name )
-                        if riskItemDefaults.count( ) == 0:
-                            self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
-                                               level = messages.ERROR )
-                            break
                         if gut_risk_index.index_name in gut_risk:
+                            riskItemDefaults = RiskItemDefault.objects.filter( risk_name = "肠道炎症" ,
+                                                                               risk_type_number = "FXDL0003" ,
+                                                                               index_name = gut_risk_index.index_name )
+                            if riskItemDefaults.count( ) == 0:
+                                self.message_user( request ,
+                                                   '肠道炎症  FXDL0003 %s 风险指标默认值没有，请先在基础数据中心添加' % gut_risk_index.index_name ,
+                                                   level = messages.ERROR )
+                                no_err = False
+                                break
                             if gut_risk_index.is_status == "偏高":
                                 gut_risk_index.infection = RiskItemDefault.objects.get( risk_name = "肠道炎症" ,
                                                                                         risk_type_number = "FXDL0003" ,
@@ -460,8 +464,8 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                                      risk_type_number = "FXDL0003" ,
                                                                                      index_name = gut_risk_index.index_name ).low_value
                             gut_risk_index.save( )
-                            i += 1
-                if i > 0 :
+                i += 1
+                if no_err:
                     obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                     if obj_progress.is_cgzb:
                         obj_progress.cgzb_testing_date = datetime.date.today( )
@@ -763,6 +767,7 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
         i = 0  # 提交成功的数据
         n = 0  # 提交过的数量
         t = 0  # 选中状态
+        no_err = True
         for obj in queryset:
             t += 1
             if obj.is_status == 1:
@@ -770,14 +775,15 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                 meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 if meta_risk_indexes.count( ) > 0:
                     for meta_risk_index in meta_risk_indexes:
-                        riskItemDefaults = RiskItemDefault.objects.filter( risk_name = "血脂" ,
-                                                                           risk_type_number = "FXDL0002" ,
-                                                                           index_name = meta_risk_index.index_name )
-                        if riskItemDefaults.count( ) == 0:
-                            self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
-                                               level = messages.ERROR )
-                            break
                         if meta_risk_index.index_name in meta_risk:
+                            riskItemDefaults = RiskItemDefault.objects.filter( risk_name = "血脂" ,
+                                                                               risk_type_number = "FXDL0002" ,
+                                                                               index_name = meta_risk_index.index_name )
+                            if riskItemDefaults.count( ) == 0:
+                                self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
+                                                   level = messages.ERROR )
+                                no_err = False
+                                break
                             if meta_risk_index.is_status == "偏高":
 
                                 meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
@@ -794,8 +800,8 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                                                                                    risk_type_number = "FXDL0002" ,
                                                                                    index_name = meta_risk_index.index_name ).low_value
                             meta_risk_index.save( )
-                            i += 1  #提交成功数量
-                if i > 0 :  #提交成功数量1就修改样本进度状态
+                i += 1  # 提交成功数量
+                if no_err:
                     obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                     if obj_progress.is_cgzb:
                         obj_progress.shzb_testing_date = datetime.date.today( )
@@ -1101,6 +1107,7 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         i = 0  # 提交成功的数据
         n = 0  # 提交过的数量
         t = 0  # 选中状态
+        no_err = True
         for obj in queryset:
             t += 1
             if obj.is_status == 1:
@@ -1108,14 +1115,15 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 if meta_risk_indexes.count( ) > 0:
                     for meta_risk_index in meta_risk_indexes:
-                        riskItemDefaults = RiskItemDefault.objects.get( risk_name = "血脂" ,
-                                                                                         risk_type_number = "FXDL0002" ,
-                                                                                         index_name = meta_risk_index.index_name )
-                        if riskItemDefaults.count( ) == 0:
-                            self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
-                                               level = messages.ERROR )
-                            break
                         if meta_risk_index.index_name in meta_risk:
+                            riskItemDefaults = RiskItemDefault.objects.filter( risk_name = "血脂" ,
+                                                                               risk_type_number = "FXDL0002" ,
+                                                                               index_name = meta_risk_index.index_name )
+                            if riskItemDefaults.count( ) == 0:
+                                self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
+                                                   level = messages.ERROR )
+                                no_err = False
+                                break
                             if meta_risk_index.is_status == "偏高":
                                 meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
                                                                                          risk_type_number = "FXDL0002" ,
@@ -1131,18 +1139,18 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                                    risk_type_number = "FXDL0002" ,
                                                                                    index_name = meta_risk_index.index_name ).low_value
                             meta_risk_index.save( )
-                            i += 1  # 提交成功数量
                 gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 if gut_risk_indexes.count( ) > 0:
                     for gut_risk_index in gut_risk_indexes:
-                        riskItemDefaults = RiskItemDefault.objects.get( risk_name = "肠道炎症" ,
-                                                                        risk_type_number = "FXDL0003" ,
-                                                                        index_name = meta_risk_index.index_name )
-                        if riskItemDefaults.count( ) == 0:
-                            self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
-                                               level = messages.ERROR )
-                            break
                         if gut_risk_index.index_name in gut_risk:
+                            riskItemDefaults = RiskItemDefault.objects.filter( risk_name = "肠道炎症" ,
+                                                                               risk_type_number = "FXDL0003" ,
+                                                                               index_name = meta_risk_index.index_name )
+                            if riskItemDefaults.count( ) == 0:
+                                self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
+                                                   level = messages.ERROR )
+                                no_err = False
+                                break
                             if gut_risk_index.is_status == "偏高":
                                 gut_risk_index.infection = RiskItemDefault.objects.get( risk_name = "肠道炎症" ,
                                                                                         risk_type_number = "FXDL0003" ,
@@ -1164,8 +1172,8 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                                      risk_type_number = "FXDL0003" ,
                                                                                      index_name = meta_risk_index.index_name ).low_value
                             gut_risk_index.save( )
-                            i += 1  #提交成功数量
-                if i > 0 :  #提交成功数量1就修改样本进度状态
+                i += 1  # 提交成功数量
+                if no_err:
                     obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                     if obj_progress.is_cgzb:
                         obj_progress.qPCR_testing_date = datetime.date.today( )
@@ -1710,6 +1718,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         i = 0  # 提交成功的数据
         n = 0  # 提交过的数量
         t = 0  # 选中状态
+        no_err = True
         for obj in queryset:
             t += 1
             if obj.is_status == 1:
@@ -1717,14 +1726,15 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 if meta_risk_indexes.count( ) > 0:
                     for meta_risk_index in meta_risk_indexes:
-                        riskItemDefaults = RiskItemDefault.objects.get( risk_name = "血脂" ,
-                                                                        risk_type_number = "FXDL0002" ,
-                                                                        index_name = meta_risk_index.index_name )
-                        if riskItemDefaults.count( ) == 0:
-                            self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
-                                               level = messages.ERROR )
-                            break
                         if meta_risk_index.index_name in meta_risk:
+                            riskItemDefaults = RiskItemDefault.objects.filter( risk_name = "血脂" ,
+                                                                               risk_type_number = "FXDL0002" ,
+                                                                               index_name = meta_risk_index.index_name )
+                            if riskItemDefaults.count( ) == 0:
+                                self.message_user( request , '风险指标默认值没有，请先在基础数据中心添加' ,
+                                                   level = messages.ERROR )
+                                no_err = False
+                                break
                             if meta_risk_index.is_status == "偏高":
                                 meta_risk_index.blood_fat = RiskItemDefault.objects.get( risk_name = "血脂" ,
                                                                                          risk_type_number = "FXDL0002" ,
@@ -1740,8 +1750,8 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                                    risk_type_number = "FXDL0002" ,
                                                                                    index_name = meta_risk_index.index_name ).low_value
                             meta_risk_index.save( )
-                            i += 1
-                if i > 0:
+                i += 1
+                if no_err:
                     obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
                     if obj_progress.is_cgzb:
                         obj_progress.SCFAs_testing_date = datetime.date.today( )
@@ -1824,15 +1834,15 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             '''保存信息的时候，对糖代谢能力，便秘腹泻做判读'''
             if obj.carbon_source.name == "粪便":
                 digestive_diarrhea = (1 + 2.97002415119877 / (obj.acetic_acid / obj.propionic) + 4.60469584970147 / (
-                            obj.acetic_acid / obj.butyric)) / (39.8959183583737 / (
-                            obj.acetic_acid / obj.isobutyric_acid) + 33.5702967741936 / (
-                                                                           obj.acetic_acid / obj.valeric) + 27.6137713653937 / (
-                                                                           obj.acetic_acid / obj.isovaleric))
+                        obj.acetic_acid / obj.butyric)) / (39.8959183583737 / (
+                        obj.acetic_acid / obj.isobutyric_acid) + 33.5702967741936 / (
+                                                                   obj.acetic_acid / obj.valeric) + 27.6137713653937 / (
+                                                                   obj.acetic_acid / obj.isovaleric))
                 metaboilic = obj.butyric / obj.acetic_acid
                 risk , stat = Risk.objects.get_or_create( sample_number = obj.sample_number )
                 risk.digestive_diarrhea = digestive_diarrhea
                 risk.metaboilic = metaboilic
-                risk.save()
+                risk.save( )
         if (obj.acetic_acid is not None) and (obj.propionic is not None) and (obj.butyric is not None):
             obj.acid_first = (obj.acetic_acid + obj.propionic + obj.butyric) / obj.total_acid
 
@@ -2182,3 +2192,18 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
             else:
                 self.message_user( request , '产气量 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
         obj.save( )
+
+
+@admin.register( IndexesUnusual )
+class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    pass
+
+
+@admin.register( MetaRiskIndexes )
+class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    pass
+
+
+@admin.register( GutRiskIndexes )
+class GutRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    pass
