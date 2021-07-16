@@ -658,45 +658,40 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 risk.digestive_constipation_status = status
                 risk.digestive_constipation_reference_range = reference_range
                 risk.digestive_diarrhea = digestive_constipation
-                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
                 status , reference_range = get_status_risk( cb , "便秘" , digestive_diarrhea )
                 risk.digestive_diarrhea_status = status
                 risk.digestive_diarrhea_reference_range = reference_range
                 risk.metaboilic = metaboilic
-                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
                 status , reference_range = get_status_risk( cb , "腹泻" , metaboilic )
                 risk.metaboilic_status = status
                 risk.metaboilic_reference_range = reference_range
                 '''血脂'''
                 risk.metaboilicx = float( sum_blood_fat )
-                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
                 status , reference_range = get_status_risk( cb , "血脂" , sum_blood_fat )
                 risk.metaboilicx_status = status
                 risk.metaboilicx_reference_range = reference_range
                 '''肥胖'''
                 risk.metaboilicf = float( fat )
-                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
                 status , reference_range = get_status_risk( cb , "肥胖" , fat )
                 risk.metaboilicf_status = status
                 risk.metaboilicf_reference_range = reference_range
                 '''肠道炎症'''
                 risk.gut_immunity = float( infection )
-                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
                 status , reference_range = get_status_risk( cb , "肠道炎症" , infection )
                 risk.gut_immunity_status = status
                 risk.gut_immunity_reference_range = reference_range
                 '''肠道屏障'''
                 risk.gut_immunityp = float( scherm )
-                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
                 status , reference_range = get_status_risk( cb , "肠道屏障" , scherm )
                 risk.gut_immunityp_status = status
                 risk.gut_immunityp_reference_range = reference_range
                 '''消化道肿瘤'''
                 risk.gut_immunityx = float( cancer )
-                cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
                 status , reference_range = get_status_risk( cb , "消化道肿瘤" , cancer )
                 risk.gut_immunityx_status = status
                 risk.gut_immunityx_reference_range = reference_range
+                '''肠道紊乱'''
+                risk.gut_disorder =(float( infection )+float( scherm )+float( cancer ))/3*2
                 risk.save( )
                 obj.is_status = 1  # 1是标记为风险判读
                 obj.save( )
@@ -877,7 +872,7 @@ class ChecksAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 class RiskAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
         'id' , 'sample_number' , 'digestive_constipation_status' , 'digestive_diarrhea_status' , 'metaboilic_status' ,
-        'metaboilicx_status' , 'metaboilicf_status' , 'gut_immunity_status' , 'gut_disorder_status')
+        'metaboilicx_status' , 'metaboilicf_status' , 'gut_immunity_status' , 'gut_disorder')
     list_display_links = ('sample_number' ,)
     ordering = ("-sample_number" ,)
     view_on_site = False

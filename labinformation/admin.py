@@ -376,6 +376,8 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     conventional_unusual.high = unusual_high
                     conventional_unusual.low = unusual_low
                     conventional_unusual.save( )
+                    if (unusual_high == "") and (unusual_low == ""):
+                        conventional_unusual.delete()
                     i += 1
                 else:
                     n += 1
@@ -2196,14 +2198,40 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
 
 @admin.register( IndexesUnusual )
 class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    pass
+    list_display = ('sample_number' , 'check_type' )
+    list_display_links = ('sample_number' ,)
+    ordering = ('-sample_number' ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    list_filter = ('check_type' ,)
+    search_fields = ('sample_number' ,)
+    # resource_class = DegradationIndexesResource
+    # form =
+    # list_editable =
+    # actions = ['make_finish' , 'export_admin_action']
 
 
 @admin.register( MetaRiskIndexes )
 class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    pass
+    list_display = ('sample_number' , 'carbon_source','genus','index_name','is_status','blood_fat','fat')
+    list_display_links = ('sample_number' ,)
+    ordering = ('-sample_number' ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    list_filter = ('genus' ,'index_name')
+    search_fields = ('sample_number' ,)
 
 
 @admin.register( GutRiskIndexes )
 class GutRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    pass
+    list_display = ('sample_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'infection' , 'scherm','cancer')
+    list_display_links = ('sample_number' ,)
+    ordering = ('-sample_number' ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    list_filter = ('genus' , 'index_name')
+    search_fields = ('sample_number' ,)
+
