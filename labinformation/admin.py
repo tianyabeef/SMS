@@ -227,7 +227,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         'ph_value_status_colored' ,
         'sample_type' , 'colour' , 'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
@@ -607,7 +607,7 @@ class BioChemicalIndexesResource( resources.ModelResource ):
             Override to add additional logic. Does nothing by default.
         """
         if ReferenceRange.objects.filter( index_name = BioChemicalIndexes._meta.get_field(
-                'occult_Tf' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+                'fecal_nitrogen' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
             status , reference_range = get_status( BioChemicalIndexes , instance.carbon_source ,
                                                    instance.genus.english_name , 'fecal_nitrogen' ,
                                                    instance.fecal_nitrogen )
@@ -644,7 +644,7 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
         'bile_acid' ,
         'bile_acid_status_colored' , 'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
@@ -985,7 +985,7 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         'id' , 'sample_number' , 'carbon_source' , 'genus' , 'ct' , 'concentration' , 'concentration_reference_range' ,
         'concentration_status_colored' , 'formula_number' , 'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 38
@@ -1518,7 +1518,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     'isovaleric_status_colored' ,
                     'acid_first_status_colored' , 'acid_second_status_colored' , 'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
@@ -2055,7 +2055,7 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
     list_display = ('sample_number' , 'carbon_source' , 'genus' ,
                     'degradation_status_colored' , 'gas_status_colored' , 'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
@@ -2200,7 +2200,7 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
 class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('sample_number' , 'check_type' )
     list_display_links = ('sample_number' ,)
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
@@ -2216,7 +2216,7 @@ class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('sample_number' , 'carbon_source','genus','index_name','is_status','blood_fat','fat')
     list_display_links = ('sample_number' ,)
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
@@ -2228,7 +2228,7 @@ class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 class GutRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('sample_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'infection' , 'scherm','cancer')
     list_display_links = ('sample_number' ,)
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
