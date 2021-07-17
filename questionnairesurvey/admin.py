@@ -51,29 +51,41 @@ class QuenstionResource( resources.ModelResource ):
         skip_unchanged = True
 
         fields = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'name' , 'gender' ,
-            'age' , 'age_sgement' , 'province' , 'height' , 'weight' , 'waistline' , 'bmi_value' , 'phone' ,
+            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'age_sgement' ,
+            'province' , 'waistline' , 'bmi_value' , 'name' , 'gender' , 'age' , 'height' , 'weight' , 'phone' ,
             'email' , 'complaint' , 'condition' , 'exhaust' , 'classification' , 'unwell' , 'smoke' ,
             'antibiotic_consumption' , 'probiotic_supplements' , 'prebiotics_supplement' , 'dietary_habit' ,
             'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'blood_pressure' ,
             'trioxypurine')
         export_order = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'name' , 'gender' ,
-            'age' , 'age_sgement' , 'province' , 'height' , 'weight' , 'waistline' , 'bmi_value' , 'phone' ,
+            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'age_sgement' ,
+            'province' , 'waistline' , 'bmi_value' , 'name' , 'gender' , 'age' , 'height' , 'weight' , 'phone' ,
             'email' , 'complaint' , 'condition' , 'exhaust' , 'classification' , 'unwell' , 'smoke' ,
             'antibiotic_consumption' , 'probiotic_supplements' , 'prebiotics_supplement' , 'dietary_habit' ,
             'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'blood_pressure' ,
             'trioxypurine')
 
+    @staticmethod
+    def sex_value_display(value):
+        SEX_CHOICES = {
+            '女性': 0 ,
+            '男性': 1 ,
+        }
+        if value is not None:
+            value = SEX_CHOICES.get( value )
+        else:
+            value = None  # 缺失值
+        return value
+
     def get_diff_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '姓名' , '性别' , '年龄' , '年龄分段' , '地域' , '身高' , '体重' ,
-                '腰围' , 'BMI值' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
+        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '年龄分段' , '地域' , '腰围' , 'BMI值' , '姓名' , '性别' , '年龄' ,
+                '身高' , '体重' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
                 '近1个月抗生素食用' , '近两周益生菌补充' , '近两周益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
                 '血压' , '尿酸']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '姓名' , '性别' , '年龄' , '年龄分段' , '地域' , '身高' , '体重' ,
-                '腰围' , 'BMI值' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
+        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '年龄分段' , '地域' , '腰围' , 'BMI值' , '姓名' , '性别' , '年龄' ,
+                '身高' , '体重' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
                 '近1个月抗生素食用' , '近两周益生菌补充' , '近两周益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
                 '血压' , '尿酸']
 
@@ -88,7 +100,7 @@ class QuenstionResource( resources.ModelResource ):
             raise forms.ValidationError( '碳源名称有误，请到基础数据中核实。' )
         if genuss.count( ) == 0:
             raise forms.ValidationError( '菌属名称有误，请到基础数据中核实。' )
-        if (row ['id'] is None) and (    # TODO 样本编号已经设置唯一，联合唯一有待删除
+        if (row ['id'] is None) and (  # TODO 样本编号已经设置唯一，联合唯一有待删除
                 Quenstion.objects.filter( sample_number = row ['样本编号'] , carbon_source = row ['碳源'] ,
                                           genus = row ['菌种'] ).count( ) > 0):
             raise forms.ValidationError( '样本编号、碳源、菌种 记录内容联合唯一，不能有冲突。' )
@@ -108,14 +120,23 @@ class QuenstionResource( resources.ModelResource ):
         row ['carbon_source_zh'] = row ['碳源中文名称']
         row ['genus_zh'] = row ['菌种中文名称']
         row ['name'] = row ['姓名']
-        row ['gender'] = row ['性别']
+        row ['gender'] = self.sex_value_display(row ['性别'])
         row ['age'] = row ['年龄']
         row ['age_sgement'] = row ['年龄分段']
         row ['province'] = row ['地域']
-        row ['height'] = row ['身高']
+        if row ['身高'] is not None:
+            if row ['身高'] > 0:
+                row ['height'] = float( row ['身高'] ) / 100  # 体重单位转换为mi
+        else:
+            row ['height'] = row ['身高']
         row ['weight'] = row ['体重']
         row ['waistline'] = row ['腰围']
-        row ['bmi_value'] = row ['BMI值']
+        if (row ['height'] is not None) and (row ['weight'] is not None):
+            if (row ['height'] > 0) and (row ['weight'] > 0):
+                row ['bmi_value'] = float( row ['weight'] ) / (
+                            float( row ['height'] ) * float( row ['height'] ))  # BMI值由系统自动计算
+        else:
+            row ['bmi_value'] = row ['BMI值']
         row ['phone'] = row ['电话']
         row ['email'] = row ['邮箱']
         row ['complaint'] = row ['主诉']
@@ -144,10 +165,11 @@ class QuenstionResource( resources.ModelResource ):
 
 @admin.register( Quenstion )
 class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('sample_number' , 'name' , 'gender' , 'age' , 'bmi_value' , 'phone' , 'email' , 'is_status')
+    list_display = (
+        'sample_number' , 'internal_number' , 'name' , 'gender' , 'age' , 'bmi_value' , 'phone' , 'email' , 'is_status')
     list_display_links = ('sample_number' ,)
     # readonly_fields =
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20

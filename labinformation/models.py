@@ -20,6 +20,7 @@ class ConventionalIndex( models.Model ):
         (1 , '阳性') ,
     )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     carbon_source_zh = models.CharField( verbose_name = '碳源中文名称' , max_length = 255 , null = True , blank = True )
@@ -77,6 +78,7 @@ class BioChemicalIndexes( models.Model ):
         (2 , '完成并判读') ,
     )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     carbon_source_zh = models.CharField( verbose_name = '碳源中文名称' , max_length = 255 , null = True , blank = True )
@@ -106,6 +108,7 @@ class BioChemicalIndexes( models.Model ):
 
 class IndexesUnusual( models.Model ):
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     check_type = models.CharField( verbose_name = '检测大类名称' , max_length = 255 )
     high = models.TextField( verbose_name = '偏高' , blank = True , null = True )
     low = models.TextField( verbose_name = '偏低' , blank = True , null = True )
@@ -118,6 +121,7 @@ class MetaRiskIndexes( models.Model ):
         (2 , '偏低') ,
     )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     index_name = models.CharField( verbose_name = '指标名称' , blank = True , null = True , max_length = 255 )
@@ -140,6 +144,7 @@ class GutRiskIndexes( models.Model ):
         (2 , '偏低') ,
     )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     index_name = models.CharField( verbose_name = '指标名称' , blank = True , null = True , max_length = 255 )
@@ -159,6 +164,7 @@ class GutRiskIndexes( models.Model ):
 # Create your models here.
 class QpcrIndexes( models.Model ):
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     carbon_source_zh = models.CharField( verbose_name = '碳源中文名称' , max_length = 255 , null = True , blank = True )
@@ -206,6 +212,7 @@ class DegradationIndexes( models.Model ):
         (2 , '完成并判读') ,
     )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     carbon_source_zh = models.CharField( verbose_name = '碳源中文名称' , max_length = 255 , null = True , blank = True )
@@ -246,6 +253,7 @@ class ScfasIndexes( models.Model ):
         (2 , '完成并判读') ,
     )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     carbon_source_zh = models.CharField( verbose_name = '碳源中文名称' , max_length = 255 , null = True , blank = True )

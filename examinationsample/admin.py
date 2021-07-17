@@ -272,7 +272,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         'product_name' , 'report_template' , 'report_date' ,
         'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ("-sample_number" , "-receive_sample_date")
+    ordering = ("-id" , "-receive_sample_date")
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
@@ -346,36 +346,42 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                         gs_temp_id = Genus.objects.get( english_name = check_item.genus )
                         if check_item.type.number == "JCDL0001":  # 问卷调查
                             Quenstion.objects.get_or_create( sample_number = obj.sample_number ,
+                                                             internal_number = obj.internal_number,
                                                              carbon_source = cs_temp_id , genus = gs_temp_id ,
                                                              carbon_source_zh = cs_temp_id.name ,
                                                              genus_zh = gs_temp_id.china_name )
                             obj_progress.is_wjxx = True
                         if check_item.type.number == "JCDL0002":  # 常规指标项
                             ConventionalIndex.objects.get_or_create( sample_number = obj.sample_number ,
+                                                                     internal_number = obj.internal_number ,
                                                                      carbon_source = cs_temp_id , genus = gs_temp_id ,
                                                                      carbon_source_zh = cs_temp_id.name ,
                                                                      genus_zh = gs_temp_id.china_name )
                             obj_progress.is_cgzb = True
                         if check_item.type.number == "JCDL0003":  # 生化指标项
                             BioChemicalIndexes.objects.get_or_create( sample_number = obj.sample_number ,
+                                                                      internal_number = obj.internal_number ,
                                                                       carbon_source = cs_temp_id , genus = gs_temp_id ,
                                                                       carbon_source_zh = cs_temp_id.name ,
                                                                       genus_zh = gs_temp_id.china_name )
                             obj_progress.is_shzb = True
                         if check_item.type.number == "JCDL0004":  # qPCR检测项
                             QpcrIndexes.objects.get_or_create( sample_number = obj.sample_number ,
+                                                               internal_number = obj.internal_number ,
                                                                carbon_source = cs_temp_id , genus = gs_temp_id ,
                                                                carbon_source_zh = cs_temp_id.name ,
                                                                genus_zh = gs_temp_id.china_name )
                             obj_progress.is_qpcr = True
                         if check_item.type.number == "JCDL0005":  # SCFAs检测项
                             ScfasIndexes.objects.get_or_create( sample_number = obj.sample_number ,
+                                                                internal_number = obj.internal_number ,
                                                                 carbon_source = cs_temp_id , genus = gs_temp_id ,
                                                                 carbon_source_zh = cs_temp_id.name ,
                                                                 genus_zh = gs_temp_id.china_name )
                             obj_progress.is_scfa = True
                         if check_item.type.number == "JCDL0006":  # 气压和降解率检测项
                             DegradationIndexes.objects.get_or_create( sample_number = obj.sample_number ,
+                                                                      internal_number = obj.internal_number ,
                                                                       carbon_source = cs_temp_id , genus = gs_temp_id ,
                                                                       carbon_source_zh = cs_temp_id.name ,
                                                                       genus_zh = gs_temp_id.china_name )

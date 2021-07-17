@@ -101,23 +101,23 @@ class ConventionalIndexResource( resources.ModelResource ):
         model = ConventionalIndex
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'occult_Tf' ,
+            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'occult_Tf' ,
             'occult_Hb' , 'hp' , 'calprotectin' ,
             'ph_value' ,
             'sample_type' , 'colour')
         export_order = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'occult_Tf' ,
+            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'occult_Tf' ,
             'occult_Hb' , 'hp' , 'calprotectin' ,
             'ph_value' ,
             'sample_type' , 'colour')
 
     def get_diff_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' , '幽门螺旋杆菌 抗原（HP-Ag）' ,
+        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' , '幽门螺旋杆菌 抗原（HP-Ag）' ,
                 '钙卫蛋白' , 'PH值' ,
                 '样本类型' , '颜色' , '松软程度' , '布里斯托']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' , '幽门螺旋杆菌 抗原（HP-Ag）' ,
+        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' , '幽门螺旋杆菌 抗原（HP-Ag）' ,
                 '钙卫蛋白' , 'PH值' ,
                 '样本类型' , '颜色' , '松软程度' , '布里斯托']
 
@@ -162,6 +162,7 @@ class ConventionalIndexResource( resources.ModelResource ):
         """
         instance = self.get_instance( instance_loader , row )
         row ['sample_number'] = row ['样本编号']
+        row ['internal_number'] = row ['对内编号']
         row ['carbon_source'] = row ['碳源']
         row ['carbon_source_zh'] = row ['碳源中文名称']
         row ['genus_zh'] = row ['菌种中文名称']
@@ -221,7 +222,8 @@ class ConventionalIndexResource( resources.ModelResource ):
 @admin.register( ConventionalIndex )
 class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-        'id' , 'sample_number' , 'carbon_source' , 'genus' , 'occult_Tf_status_colored' , 'occult_Hb_status_colored' ,
+        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'occult_Tf_status_colored' ,
+        'occult_Hb_status_colored' ,
         'hp_status_colored' ,
         'calprotectin_status_colored' ,
         'ph_value_status_colored' ,
@@ -377,7 +379,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     conventional_unusual.low = unusual_low
                     conventional_unusual.save( )
                     if (unusual_high == "") and (unusual_low == ""):
-                        conventional_unusual.delete()
+                        conventional_unusual.delete( )
                     i += 1
                 else:
                     n += 1
@@ -550,17 +552,17 @@ class BioChemicalIndexesResource( resources.ModelResource ):
         model = BioChemicalIndexes
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'fecal_nitrogen' ,
+            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'fecal_nitrogen' ,
             'bile_acid')
         export_order = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'fecal_nitrogen' ,
+            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'fecal_nitrogen' ,
             'bile_acid')
 
     def get_diff_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '粪氨' , '胆汁酸']
+        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '粪氨' , '胆汁酸']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '粪氨' , '胆汁酸']
+        return ['id' , '样本编号' , '对内编号','碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '粪氨' , '胆汁酸']
 
     def before_import_row(self , row , **kwargs):
         """
@@ -591,6 +593,7 @@ class BioChemicalIndexesResource( resources.ModelResource ):
         """
         instance = self.get_instance( instance_loader , row )
         row ['sample_number'] = row ['样本编号']
+        row ['internal_number'] = row ['对内编号']
         row ['carbon_source'] = row ['碳源']
         row ['genus'] = row ['菌种']
         row ['carbon_source_zh'] = row ['碳源中文名称']
@@ -640,7 +643,8 @@ class BioChemicalIndexesForm( forms.ModelForm ):
 @admin.register( BioChemicalIndexes )
 class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-        'id' , 'sample_number' , 'carbon_source' , 'genus' , 'fecal_nitrogen' , 'fecal_nitrogen_status_colored' ,
+        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'fecal_nitrogen' ,
+        'fecal_nitrogen_status_colored' ,
         'bile_acid' ,
         'bile_acid_status_colored' , 'is_status')
     list_display_links = ('sample_number' ,)
@@ -852,19 +856,19 @@ class QpcrIndexesResource( resources.ModelResource ):
         model = QpcrIndexes
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'ct' ,
+            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'ct' ,
             'formula_number' ,
             'concentration')
         export_order = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'ct' ,
+            'id' , 'sample_number','internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'ct' ,
             'formula_number' ,
             'concentration')
 
     def get_diff_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
+        return ['id' , '样本编号','对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
+        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
 
     def export(self , queryset=None , *args , **kwargs):
         """
@@ -922,6 +926,7 @@ class QpcrIndexesResource( resources.ModelResource ):
         """
         instance = self.get_instance( instance_loader , row )
         row ['sample_number'] = row ['样本编号']
+        row ['internal_number'] = row ['对内编号']
         row ['carbon_source'] = row ['碳源']
         row ['genus'] = row ['菌种']
         row ['carbon_source_zh'] = row ['碳源中文名称']
@@ -982,7 +987,8 @@ class QpcrIndexesForm( forms.ModelForm ):
 @admin.register( QpcrIndexes )
 class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-        'id' , 'sample_number' , 'carbon_source' , 'genus' , 'ct' , 'concentration' , 'concentration_reference_range' ,
+        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'ct' , 'concentration' ,
+        'concentration_reference_range' ,
         'concentration_status_colored' , 'formula_number' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
@@ -1219,13 +1225,13 @@ class ScfasIndexesResource( resources.ModelResource ):
     class Meta:
         model = ScfasIndexes
         skip_unchanged = True
-        fields = ('id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+        fields = ('id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
                   'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
                   'isovaleric' ,
                   'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
                   'isobutyric_acid_ratio' , 'valeric_ratio' ,
                   'isovaleric_ratio')
-        export_order = ('id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+        export_order = ('id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
                         'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
                         'isovaleric' ,
                         'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
@@ -1233,12 +1239,12 @@ class ScfasIndexesResource( resources.ModelResource ):
                         'isovaleric_ratio')
 
     def get_diff_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
+        return ['id' , '样本编号','对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
                 '异丁酸' , '戊酸' , '异戊酸' , '乙丙丁酸占总酸比' , '异丁戊异戊占总酸比' , '乙酸占比' , '丙酸占比' , '丁酸占比' ,
                 '异丁酸占比' , '戊酸占比' , '异戊酸占比']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
+        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
                 '异丁酸' , '戊酸' , '异戊酸' , '乙丙丁酸占总酸比' , '异丁戊异戊占总酸比' , '乙酸占比' , '丙酸占比' , '丁酸占比' ,
                 '异丁酸占比' , '戊酸占比' , '异戊酸占比']
 
@@ -1338,6 +1344,7 @@ class ScfasIndexesResource( resources.ModelResource ):
         """
         instance = self.get_instance( instance_loader , row )
         row ['sample_number'] = row ['样本编号']
+        row ['internal_number'] = row ['对内编号']
         row ['carbon_source'] = row ['碳源']
         row ['genus'] = row ['菌种']
         row ['carbon_source_zh'] = row ['碳源中文名称']
@@ -1511,7 +1518,7 @@ class ScfasIndexesResource( resources.ModelResource ):
 
 @admin.register( ScfasIndexes )
 class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id' , 'sample_number' , 'carbon_source' , 'genus' ,
+    list_display = ('id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' ,
                     'total_acid_status_colored' , 'acetic_acid_status_colored' , 'propionic_status_colored' ,
                     'butyric_status_colored' ,
                     'isobutyric_acid_status_colored' , 'valeric_status_colored' ,
@@ -1978,17 +1985,17 @@ class DegradationIndexesResource( resources.ModelResource ):
         model = DegradationIndexes
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'degradation' ,
+            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'degradation' ,
             'gas')
         export_order = (
-            'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'degradation' ,
+            'id' , 'sample_number','internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'degradation' ,
             'gas')
 
     def get_export_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '降解率' , '产气']
+        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '降解率' , '产气']
 
     def get_diff_headers(self):
-        return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '降解率' , '产气']
+        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '降解率' , '产气']
 
     def before_import_row(self , row , **kwargs):
         """
@@ -2019,6 +2026,7 @@ class DegradationIndexesResource( resources.ModelResource ):
         """
         instance = self.get_instance( instance_loader , row )
         row ['sample_number'] = row ['样本编号']
+        row ['internal_number'] = row ['对内编号']
         row ['carbon_source'] = row ['碳源']
         row ['genus'] = row ['菌种']
         row ['carbon_source_zh'] = row ['碳源中文名称']
@@ -2052,7 +2060,7 @@ class DegradationIndexesResource( resources.ModelResource ):
 
 @admin.register( DegradationIndexes )
 class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('sample_number' , 'carbon_source' , 'genus' ,
+    list_display = ('id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' ,
                     'degradation_status_colored' , 'gas_status_colored' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
@@ -2198,7 +2206,7 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
 
 @admin.register( IndexesUnusual )
 class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('sample_number' , 'check_type' )
+    list_display = ('sample_number' ,'internal_number' , 'check_type')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
     view_on_site = False
@@ -2214,19 +2222,7 @@ class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
 @admin.register( MetaRiskIndexes )
 class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('sample_number' , 'carbon_source','genus','index_name','is_status','blood_fat','fat')
-    list_display_links = ('sample_number' ,)
-    ordering = ('-id' ,)
-    view_on_site = False
-    list_max_show_all = 100
-    list_per_page = 20
-    list_filter = ('genus' ,'index_name')
-    search_fields = ('sample_number' ,)
-
-
-@admin.register( GutRiskIndexes )
-class GutRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('sample_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'infection' , 'scherm','cancer')
+    list_display = ('id','sample_number' ,'internal_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'blood_fat' , 'fat')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
     view_on_site = False
@@ -2235,3 +2231,15 @@ class GutRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_filter = ('genus' , 'index_name')
     search_fields = ('sample_number' ,)
 
+
+@admin.register( GutRiskIndexes )
+class GutRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    list_display = ('id',
+    'sample_number' ,'internal_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'infection' , 'scherm' , 'cancer')
+    list_display_links = ('sample_number' ,)
+    ordering = ('-id' ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    list_filter = ('genus' , 'index_name')
+    search_fields = ('sample_number' ,)

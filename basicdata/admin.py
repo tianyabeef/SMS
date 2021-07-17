@@ -1110,9 +1110,7 @@ class RiskItemDefaultAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_per_page = 20
     # list_filter =
     search_fields = ('index_name' ,)
-
     # resource_class = ProvinceResource
-
     # form = CheckItemForm
     # list_editable =
     # actions =

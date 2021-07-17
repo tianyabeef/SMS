@@ -23,7 +23,7 @@ class ReportsAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ( 'id' , 'sample_number' , 'word_report' , 'pdf_report' , 'report_testing_date' , 'report_user' , 'is_status')
     list_display_links = ('sample_number' ,)
     # readonly_fields = ('report_testing_date','report_user')
-    ordering = ('-sample_number' ,)
+    ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
