@@ -54,14 +54,14 @@ class QuenstionResource( resources.ModelResource ):
             'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'age_sgement' ,
             'province' , 'waistline' , 'bmi_value' , 'name' , 'gender' , 'age' , 'height' , 'weight' , 'phone' ,
             'email' , 'complaint' , 'condition' , 'exhaust' , 'classification' , 'unwell' , 'smoke' ,
-            'antibiotic_consumption' , 'probiotic_supplements' , 'prebiotics_supplement' , 'dietary_habit' ,
+            'antibiotic_consumption' , 'probiotic_supplements' , 'dietary_habit' ,
             'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'blood_pressure' ,
             'trioxypurine')
         export_order = (
             'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'age_sgement' ,
             'province' , 'waistline' , 'bmi_value' , 'name' , 'gender' , 'age' , 'height' , 'weight' , 'phone' ,
             'email' , 'complaint' , 'condition' , 'exhaust' , 'classification' , 'unwell' , 'smoke' ,
-            'antibiotic_consumption' , 'probiotic_supplements' , 'prebiotics_supplement' , 'dietary_habit' ,
+            'antibiotic_consumption' , 'probiotic_supplements' , 'dietary_habit' ,
             'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'blood_pressure' ,
             'trioxypurine')
 
@@ -80,13 +80,13 @@ class QuenstionResource( resources.ModelResource ):
     def get_diff_headers(self):
         return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '年龄分段' , '地域' , '腰围' , 'BMI值' , '姓名' , '性别' , '年龄' ,
                 '身高' , '体重' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
-                '近1个月抗生素食用' , '近两周益生菌补充' , '近两周益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
+                '近1个月抗生素食用' , '近两周益生菌益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
                 '血压' , '尿酸']
 
     def get_export_headers(self):
         return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '年龄分段' , '地域' , '腰围' , 'BMI值' , '姓名' , '性别' , '年龄' ,
                 '身高' , '体重' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
-                '近1个月抗生素食用' , '近两周益生菌补充' , '近两周益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
+                '近1个月抗生素食用' , '近两周益生菌益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
                 '血压' , '尿酸']
 
     def before_import_row(self , row , **kwargs):
@@ -146,8 +146,7 @@ class QuenstionResource( resources.ModelResource ):
         row ['unwell'] = row ['近1个月胃肠道不适症状']
         row ['smoke'] = row ['吸烟饮酒']
         row ['antibiotic_consumption'] = row ['近1个月抗生素食用']
-        row ['probiotic_supplements'] = row ['近两周益生菌补充']
-        row ['prebiotics_supplement'] = row ['近两周益生元补充']
+        row ['probiotic_supplements'] = row ['近两周益生菌益生元补充']
         row ['dietary_habit'] = row ['饮食习惯']
         row ['allergen'] = row ['过敏源']
         row ['anamnesis'] = row ['既往病史']
@@ -195,7 +194,7 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         }) ,
         ('疾病' , {
             'fields': (('antibiotic_consumption' , 'probiotic_supplements') ,
-                       ('prebiotics_supplement' , 'dietary_habit' ,) ,
+                       ( 'dietary_habit' ,) ,
                        ('allergen' , 'anamnesis' ,) ,
                        ('triglyceride' , 'cholesterol' ,) ,
                        ('hdl' , 'blood_glucose' , 'trioxypurine'))

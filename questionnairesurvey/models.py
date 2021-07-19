@@ -43,7 +43,7 @@ class Quenstion( models.Model ):
     smoke = models.CharField( verbose_name = '吸烟饮酒' , max_length = 255 , null = True , blank = True )
     antibiotic_consumption = models.CharField( verbose_name = '近1个月抗生素食用' , max_length = 255 , null = True ,
                                                blank = True )
-    probiotic_supplements = models.CharField( verbose_name = '近两周益生菌补充' , max_length = 255 , null = True ,
+    probiotic_supplements = models.CharField( verbose_name = '近两周益生菌益生元补充' , max_length = 255 , null = True ,
                                               blank = True )
     prebiotics_supplement = models.CharField( verbose_name = '近两周益生元补充' , max_length = 255 , null = True ,
                                               blank = True )
