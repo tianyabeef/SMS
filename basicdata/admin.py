@@ -635,9 +635,12 @@ class TemplateForm( forms.ModelForm ):
         exclude = ("" ,)
 
     def clean_file_template(self):
-        ext = self.cleaned_data ["file_template"]._name.split( '.' ) [-1].lower( )
-        if ext not in ['doc' , 'docx' , 'xlsx' , 'xls' , 'txt']:
-            raise forms.ValidationError( "只能上传doc,docx后缀的word文档" )
+        if self.cleaned_data ["file_template"] is None:
+            pass
+        else:
+            ext = self.cleaned_data ["file_template"].name.split( '.' ) [-1].lower( )
+            if ext not in ['doc' , 'docx' , 'xlsx' , 'xls' , 'txt']:
+                raise forms.ValidationError( "只能上传doc,docx后缀的word文档" )
         return self.cleaned_data ["file_template"]
 
 

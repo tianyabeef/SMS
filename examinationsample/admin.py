@@ -605,7 +605,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 rt = "-"
             if value == 2:
                 rt = RichText( )
-                rt.add( '↓' , color = '#ff00ff' )
+                rt.add( '↓' , color = '#111111' )
         return rt
 
     def make_risk(self , request , queryset):

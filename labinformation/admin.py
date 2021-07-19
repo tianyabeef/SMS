@@ -353,22 +353,22 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     for key , status in {"occult_Tf": obj.occult_Tf_status , "occult_Hb": obj.occult_Hb_status ,
                                          "calprotectin": obj.calprotectin_status , "hp": obj.hp_status}.items( ):
                         if status == 0:
-                            unusual_high = "%s,%s,%s,%s;" % (
-                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                            unusual_high = "%s,%s;" % (   #常规指标，展示形式'''PH值;PH值;'''
+                                unusual_high ,
                                 ConventionalIndex._meta.get_field( key ).verbose_name)
                             '''MetaRiskIndexes   GutRiskIndexes信息新增一条'''
                             if obj.carbon_source.name == "粪便":
                                 create_risk( obj , key , ConventionalIndex , "偏高" , False )
                     if obj.ph_value_status != 1:
                         if obj.ph_value_status == 0:
-                            unusual_high = "%s,%s,%s,%s;" % (
-                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                            unusual_high = "%s,%s;" % (   #常规指标，展示形式'''PH值;PH值;'''
+                                unusual_high ,
                                 ConventionalIndex._meta.get_field( "ph_value" ).verbose_name)
                             if obj.carbon_source.name == "粪便":
                                 create_risk( obj , "ph_value" , ConventionalIndex , "偏高" )
                         else:
-                            unusual_low = "%s,%s,%s,%s;" % (
-                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                            unusual_low = "%s,%s;" % (    #常规指标，展示形式'''PH值;PH值;'''
+                                unusual_low ,
                                 ConventionalIndex._meta.get_field(
                                     "ph_value" ).verbose_name)
                             if obj.carbon_source.name == "粪便":
@@ -741,14 +741,14 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                                          "bile_acid": obj.bile_acid_status}.items( ):
                         if status != 1:
                             if status == 0:
-                                unusual_high = "%s,%s,%s,%s;" % (
-                                    unusual_high , obj.carbon_source.name , obj.genus.china_name ,
+                                unusual_high = "%s,%s;" % (    #常规指标，展示形式'''胆汁酸;'''
+                                    unusual_high ,
                                     BioChemicalIndexes._meta.get_field( key ).verbose_name)
                                 if obj.carbon_source.name == "粪便":
                                     create_risk( obj , key , BioChemicalIndexes , "偏高" , False )
                             else:
-                                unusual_low = "%s,%s,%s,%s;" % (
-                                    unusual_low , obj.carbon_source.name , obj.genus.china_name ,
+                                unusual_low = "%s,%s;" % (
+                                    unusual_low ,
                                     BioChemicalIndexes._meta.get_field( key ).verbose_name)
                                 if obj.carbon_source.name == "粪便":
                                     create_risk( obj , key , BioChemicalIndexes , "偏低" , False )
@@ -1078,18 +1078,21 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     concentration_status = obj.concentration_status
                     if concentration_status != 1:
                         if concentration_status == 0:
-                            unusual_high = "%s,%s,%s,%s;" % (
-                                unusual_high , obj.carbon_source.name , obj.genus.china_name ,
-                                QpcrIndexes._meta.get_field( "concentration" ).verbose_name)
                             if obj.carbon_source.name == "粪便":
+                                unusual_high = "%s,%s;" % (  # qpcr展示形式：双歧杆菌；普拉梭菌
+                                    unusual_high , obj.genus.china_name)
                                 create_risk( obj , "concentration" , QpcrIndexes , "偏高" , True )
+                            else:
+                                unusual_high = "%s,%s,%s;" % (  # qpcr展示形式：果糖,双歧杆菌；木糖醇,普拉梭菌
+                                    unusual_high , obj.carbon_source.name , obj.genus.china_name)
                         else:
-                            unusual_low = "%s,%s,%s,%s;" % (
-                                unusual_low , obj.carbon_source.name , obj.genus.china_name ,
-                                QpcrIndexes._meta.get_field(
-                                    "concentration" ).verbose_name)
                             if obj.carbon_source.name == "粪便":
+                                unusual_low = "%s,%s;" % (  # qpcr展示形式：双歧杆菌;普拉梭菌
+                                    unusual_low , obj.genus.china_name)
                                 create_risk( obj , "concentration" , QpcrIndexes , "偏低" , True )
+                            else:
+                                unusual_low = "%s,%s,%s;" % (  # qpcr展示形式：果糖,双歧杆菌；木糖醇,普拉梭菌
+                                    unusual_low , obj.carbon_source.name , obj.genus.china_name)
                     ''' 把异常检测结果存到数据库中 '''
                     qpcr_unusual.high = unusual_high
                     qpcr_unusual.low = unusual_low
@@ -1694,17 +1697,25 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                          "isovaleric": obj.isovaleric_status}.items( ):
                         if status != 1:
                             if status == 0:
-                                unusual_high = "%s,%s,%s,%s;" % (
-                                    unusual_high , obj.carbon_source.name , obj.genus.china_name ,
-                                    ScfasIndexes._meta.get_field( key ).verbose_name)
                                 if obj.carbon_source.name == "粪便":  # 对风险判读做数据处理
+                                    unusual_high = "%s,%s;" % ( #异丁酸;乙酸
+                                        unusual_high ,
+                                        ScfasIndexes._meta.get_field( key ).verbose_name)
                                     create_risk( obj , key , ScfasIndexes , "偏高" , False )
+                                else:
+                                    unusual_high = "%s,%s,%s;" % (  #木糖醇,异丁酸;果糖,乙酸
+                                        unusual_high , obj.carbon_source.name ,
+                                        ScfasIndexes._meta.get_field( key ).verbose_name)
                             else:
-                                unusual_low = "%s,%s,%s,%s;" % (
-                                    unusual_low , obj.carbon_source.name , obj.genus.china_name ,
-                                    ScfasIndexes._meta.get_field( key ).verbose_name)
                                 if obj.carbon_source.name == "粪便":
+                                    unusual_low = "%s,%s;" % (  #异丁酸;乙酸
+                                        unusual_low ,
+                                        ScfasIndexes._meta.get_field( key ).verbose_name)
                                     create_risk( obj , key , ScfasIndexes , "偏低" , False )
+                                else:
+                                    unusual_low = "%s,%s,%s;" % (#木糖醇,异丁酸;果糖,乙酸
+                                        unusual_low , obj.carbon_source.name ,
+                                        ScfasIndexes._meta.get_field( key ).verbose_name)
                     ''' 把异常检测结果存到数据库中 '''
                     scfas_unusual.high = unusual_high
                     scfas_unusual.low = unusual_low
