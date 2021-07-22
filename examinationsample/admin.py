@@ -319,8 +319,8 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 'report_template_url' , 'is_status')
         else:
             self.readonly_fields = ('historys' , 'product_name' , 'report_template_url' , 'is_status' , 'email')
-        # if request.user.is_superuser: TODO 正式上线时放开注释
-        #     self.readonly_fields = ( 'product_name',)
+        if request.user.is_superuser:
+            self.readonly_fields = ( 'product_name' , 'report_template_url' , 'email')
         return self.readonly_fields
 
     def make_test(self , request , queryset):
