@@ -1565,12 +1565,12 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     acetic_acid_status_colored.short_description = "乙酸状态"
 
     def propionic_status_colored(self , obj):
-        if obj.total_acid_status == 0:
-            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_total_acid_status_display( ) )
-        elif obj.total_acid_status == 2:
-            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_total_acid_status_display( ) )
+        if obj.propionic_status == 0:
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_propionic_status_display( ) )
+        elif obj.propionic_status == 2:
+            return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_propionic_status_display( ) )
         else:
-            return obj.get_total_acid_status_display( )
+            return obj.get_propionic_status_display( )
 
     propionic_status_colored.short_description = "丙酸状态"
 
