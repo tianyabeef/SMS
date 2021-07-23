@@ -68,8 +68,8 @@ class QuenstionResource( resources.ModelResource ):
     @staticmethod
     def sex_value_display(value):
         SEX_CHOICES = {
-            '女性': 0 ,
-            '男性': 1 ,
+            '女': 0 ,
+            '男': 1 ,
         }
         if value is not None:
             value = SEX_CHOICES.get( value )
