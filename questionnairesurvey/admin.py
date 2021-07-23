@@ -120,7 +120,6 @@ class QuenstionResource( resources.ModelResource ):
         row ['carbon_source_zh'] = row ['碳源中文名称']
         row ['genus_zh'] = row ['菌种中文名称']
         row ['name'] = row ['姓名']
-        print(row ['性别'])
         row ['gender'] = self.sex_value_display(row ['性别'])
         row ['age'] = row ['年龄']
         row ['age_sgement'] = row ['年龄分段']
