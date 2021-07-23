@@ -210,13 +210,14 @@ class ConventionalIndexResource( resources.ModelResource ):
                                                    instance.calprotectin )
             instance.calprotectin_reference_range = reference_range
             instance.calprotectin_status = status
-        if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
-                'ph_value' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-            status , reference_range = get_status( ConventionalIndex , instance.carbon_source ,
-                                                   instance.genus.english_name , 'ph_value' ,
-                                                   instance.ph_value )
-            instance.ph_value_reference_range = reference_range
-            instance.ph_value_status = status
+        if instance.ph_value is not None:
+            if ReferenceRange.objects.filter( index_name = ConventionalIndex._meta.get_field(
+                    'ph_value' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
+                status , reference_range = get_status( ConventionalIndex , instance.carbon_source ,
+                                                       instance.genus.english_name , 'ph_value' ,
+                                                       instance.ph_value )
+                instance.ph_value_reference_range = reference_range
+                instance.ph_value_status = status
 
 
 @admin.register( ConventionalIndex )
