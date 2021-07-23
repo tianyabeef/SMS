@@ -276,7 +276,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    list_filter = ("sample_source" , 'is_status')
+    list_filter = ("sample_source" , 'is_status','set_meal')
     search_fields = ('sample_number' , 'internal_number' , 'name' ,)
     resource_class = SampleResource
     form = SampleForm

@@ -114,12 +114,12 @@ class ConventionalIndexResource( resources.ModelResource ):
     def get_diff_headers(self):
         return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' , '幽门螺旋杆菌 抗原（HP-Ag）' ,
                 '钙卫蛋白' , 'PH值' ,
-                '样本类型' , '颜色' , '松软程度' , '布里斯托']
+                '样本类型' , '颜色' ]
 
     def get_export_headers(self):
         return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' , '幽门螺旋杆菌 抗原（HP-Ag）' ,
                 '钙卫蛋白' , 'PH值' ,
-                '样本类型' , '颜色' , '松软程度' , '布里斯托']
+                '样本类型' , '颜色' ]
 
     def before_import_row(self , row , **kwargs):
         """
@@ -809,7 +809,7 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                 i += 1  # 提交成功数量
                 if no_err:
                     obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
-                    if obj_progress.is_cgzb:
+                    if obj_progress.is_shzb:
                         obj_progress.shzb_testing_date = datetime.date.today( )
                         obj_progress.shzb_testing_staff = request.user.last_name + ' ' + request.user.first_name
                         obj_progress.save( )
@@ -1113,7 +1113,7 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         meta_risk = get_meta_risk( risk_items )
         '''肠道免疫'''
         risk_items = RiskItem.objects.filter( risk_type_number = "FXDL0003" ,
-                                              check_type_number = "JCDL0004" )  # 代谢水平判读; 常规指标项
+                                              check_type_number = "JCDL0004" )  # 代谢水平判读; qpcr指标项
         gut_risk = get_meta_risk( risk_items )
         i = 0  # 提交成功的数据
         n = 0  # 提交过的数量
@@ -1186,7 +1186,7 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 i += 1  # 提交成功数量
                 if no_err:
                     obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
-                    if obj_progress.is_cgzb:
+                    if obj_progress.is_qpcr:
                         obj_progress.qPCR_testing_date = datetime.date.today( )
                         obj_progress.qPCR_testing_staff = request.user.last_name + ' ' + request.user.first_name
                         obj_progress.save( )
@@ -1773,7 +1773,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 i += 1
                 if no_err:
                     obj_progress , created = Progress.objects.get_or_create( sample_number = obj.sample_number )
-                    if obj_progress.is_cgzb:
+                    if obj_progress.is_scfa:
                         obj_progress.SCFAs_testing_date = datetime.date.today( )
                         obj_progress.SCFAs_testing_staff = request.user.last_name + ' ' + request.user.first_name
                         obj_progress.save( )
