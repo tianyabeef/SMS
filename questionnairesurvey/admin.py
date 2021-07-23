@@ -120,19 +120,20 @@ class QuenstionResource( resources.ModelResource ):
         row ['carbon_source_zh'] = row ['碳源中文名称']
         row ['genus_zh'] = row ['菌种中文名称']
         row ['name'] = row ['姓名']
+        print(row ['性别'])
         row ['gender'] = self.sex_value_display(row ['性别'])
         row ['age'] = row ['年龄']
         row ['age_sgement'] = row ['年龄分段']
         row ['province'] = row ['地域']
         if row ['身高'] is not None:
-            if row ['身高'] > 0:
+            if float(row ['身高']) > 0:
                 row ['height'] = float( row ['身高'] ) / 100  # 体重单位转换为mi
         else:
             row ['height'] = row ['身高']
         row ['weight'] = row ['体重']
         row ['waistline'] = row ['腰围']
         if (row ['height'] is not None) and (row ['weight'] is not None):
-            if (row ['height'] > 0) and (row ['weight'] > 0):
+            if (float(row ['height'] )> 0) and (float(row ['weight']) > 0):
                 row ['bmi_value'] = float( row ['weight'] ) / (
                             float( row ['height'] ) * float( row ['height'] ))  # BMI值由系统自动计算
         else:
