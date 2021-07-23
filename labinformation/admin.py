@@ -243,7 +243,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def occult_Tf_status_colored(self , obj):
         if obj.occult_Tf_status == 0:
-            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_occult_Tf_status_display( ) )
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , "异常" )
         elif obj.occult_Tf_status == 2:
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_occult_Tf_status_display( ) )
         else:
@@ -253,7 +253,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def occult_Hb_status_colored(self , obj):
         if obj.occult_Hb_status == 0:
-            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_occult_Hb_status_display( ) )
+            return format_html( '<b style="background:{};">{}</b>' , 'red' ,  "异常" )
         elif obj.occult_Hb_status == 2:
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_occult_Hb_status_display( ) )
         else:
@@ -263,7 +263,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def hp_status_colored(self , obj):
         if obj.hp_status == 0:
-            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_hp_status_display( ) )
+            return format_html( '<b style="background:{};">{}</b>' , 'red' ,  "异常" )
         elif obj.hp_status == 2:
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_hp_status_display( ) )
         else:
@@ -273,7 +273,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def calprotectin_status_colored(self , obj):
         if obj.calprotectin_status == 0:
-            return format_html( '<b style="background:{};">{}</b>' , 'red' , obj.get_calprotectin_status_display( ) )
+            return format_html( '<b style="background:{};">{}</b>' , 'red' ,  "异常" )  # TODO 偏高改为异常
         elif obj.calprotectin_status == 2:
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_calprotectin_status_display( ) )
         else:
