@@ -622,6 +622,8 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 cancer = 0
                 digestive_diarrhea = 0
                 metaboilic = 0
+                digestive_constipation = 0
+                digestive_diarrhea = 0
                 '''初始化偏高，偏低的异常状态'''
                 risk , st = Risk.objects.get_or_create( sample_number = obj.sample_number )
                 meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
@@ -663,7 +665,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 status , reference_range = get_status_risk( cb , "便秘" , digestive_constipation )
                 risk.digestive_constipation_status = status
                 risk.digestive_constipation_reference_range = reference_range
-                risk.digestive_diarrhea = digestive_constipation
+                risk.digestive_diarrhea = digestive_diarrhea
                 status , reference_range = get_status_risk( cb , "便秘" , digestive_diarrhea )
                 risk.digestive_diarrhea_status = status
                 risk.digestive_diarrhea_reference_range = reference_range
