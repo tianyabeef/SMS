@@ -276,7 +276,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    list_filter = ("sample_source" , 'is_status','set_meal')
+    list_filter = ("sample_source" , 'is_status' , 'set_meal' , 'report_template')
     search_fields = ('sample_number' , 'internal_number' , 'name' ,)
     resource_class = SampleResource
     form = SampleForm
@@ -320,7 +320,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         else:
             self.readonly_fields = ('historys' , 'product_name' , 'report_template_url' , 'is_status' , 'email')
         if request.user.is_superuser:
-            self.readonly_fields = ( 'product_name' , 'report_template_url' , 'email')
+            self.readonly_fields = ('product_name' , 'report_template_url' , 'email')
         return self.readonly_fields
 
     def make_test(self , request , queryset):
@@ -346,7 +346,7 @@ class SampleAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                         gs_temp_id = Genus.objects.get( english_name = check_item.genus )
                         if check_item.type.number == "JCDL0001":  # 问卷调查
                             Quenstion.objects.get_or_create( sample_number = obj.sample_number ,
-                                                             internal_number = obj.internal_number,
+                                                             internal_number = obj.internal_number ,
                                                              carbon_source = cs_temp_id , genus = gs_temp_id ,
                                                              carbon_source_zh = cs_temp_id.name ,
                                                              genus_zh = gs_temp_id.china_name )
@@ -653,12 +653,16 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                         '''保存信息的时候，对糖代谢能力，便秘腹泻做判读'''
                         if scfas.carbon_source.name == "粪便":
                             digestive_constipation = (1 + 2.97002415119877 / (
-                                    float(scfas.acetic_acid) / float(scfas.propionic)) + 4.60469584970147 / (
-                                                          float(scfas.acetic_acid) / float(scfas.butyric))) / (39.8959183583737 / (
-                                    float(scfas.acetic_acid) / float(scfas.isobutyric_acid)) + 33.5702967741936 / (
-                                                                                                         float(scfas.acetic_acid) / float(scfas.valeric)) + 27.6137713653937 / (
-                                                                                                         float(scfas.acetic_acid) / float(scfas.isovaleric)))  # TODO 改为公式编号
-                            metaboilic = float(scfas.butyric) / float(scfas.acetic_acid)
+                                    float( scfas.acetic_acid ) / float( scfas.propionic )) + 4.60469584970147 / (
+                                                              float( scfas.acetic_acid ) / float( scfas.butyric ))) / (
+                                                                 39.8959183583737 / (
+                                                                 float( scfas.acetic_acid ) / float(
+                                                             scfas.isobutyric_acid )) + 33.5702967741936 / (
+                                                                         float( scfas.acetic_acid ) / float(
+                                                                     scfas.valeric )) + 27.6137713653937 / (
+                                                                         float( scfas.acetic_acid ) / float(
+                                                                     scfas.isovaleric )))  # TODO 改为公式编号
+                            metaboilic = float( scfas.butyric ) / float( scfas.acetic_acid )
                 '''便秘腹泻判读\糖代谢判读'''
                 risk.digestive_constipation = digestive_constipation
                 cb = Carbon.objects.get( id = 18 )  # TODO 获得粪便碳源，为了获取风险参考范围
@@ -699,7 +703,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 risk.gut_immunityx_status = status
                 risk.gut_immunityx_reference_range = reference_range
                 '''肠道紊乱'''
-                risk.gut_disorder =(float( infection )+float( scherm )+float( cancer ))/3*2
+                risk.gut_disorder = (float( infection ) + float( scherm ) + float( cancer )) / 3 * 2
                 risk.save( )
                 obj.is_status = 1  # 1是标记为风险判读
                 obj.save( )

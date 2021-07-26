@@ -1854,10 +1854,10 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                              obj.isovaleric
             '''保存信息的时候，对糖代谢能力，便秘腹泻做判读'''
             if obj.carbon_source.name == "粪便":
-                digestive_diarrhea = (1 + 2.97002415119877 / (obj.acetic_acid / obj.propionic) + 4.60469584970147 / (
-                        obj.acetic_acid / obj.butyric)) / (39.8959183583737 / (
-                        obj.acetic_acid / obj.isobutyric_acid) + 33.5702967741936 / (
-                                                                   obj.acetic_acid / obj.valeric) + 27.6137713653937 / (
+                digestive_diarrhea = (1 + 2.97002415119877 / float(obj.acetic_acid / obj.propionic) + 4.60469584970147 / float(
+                        obj.acetic_acid / obj.butyric)) / (39.8959183583737 / float(
+                        obj.acetic_acid / obj.isobutyric_acid) + 33.5702967741936 / float(
+                                                                   obj.acetic_acid / obj.valeric) + 27.6137713653937 / float(
                                                                    obj.acetic_acid / obj.isovaleric))
                 metaboilic = obj.butyric / obj.acetic_acid
                 risk , stat = Risk.objects.get_or_create( sample_number = obj.sample_number )
