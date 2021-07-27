@@ -261,8 +261,8 @@ class SampleResource( resources.ModelResource ):
                 obj_progress.save( )
             else:
                 raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
-        else:
-            raise forms.ValidationError( "样本的检查项已经存在，请删除检查项" )
+        # else:
+            # raise forms.ValidationError( "样本的检查项已经存在，请删除检查项" ) #TODO 后续做严格调整
 
 
 @admin.register( Sample )
