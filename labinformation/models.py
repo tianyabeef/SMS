@@ -25,22 +25,22 @@ class ConventionalIndex( models.Model ):
     genus = models.ForeignKey( Genus , verbose_name = '菌种' , on_delete = models.CASCADE , null = True )
     carbon_source_zh = models.CharField( verbose_name = '碳源中文名称' , max_length = 255 , null = True , blank = True )
     genus_zh = models.CharField( verbose_name = '菌种中文名称' , max_length = 255 , null = True , blank = True )
-    occult_Tf = models.IntegerField( verbose_name = '潜血双联-Tf' , choices = RESULT_CHOICES , default = 0 , null = True ,
+    occult_Tf = models.IntegerField( verbose_name = '潜血双联-Tf' , choices = RESULT_CHOICES , null = True ,
                                      blank = True )
     occult_Tf_status = models.IntegerField( verbose_name = '潜血双联-Tf状态' , choices = STATUS_CHOICES , null = True ,
                                             blank = True )
     occult_Tf_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True , blank = True )
-    occult_Hb = models.IntegerField( verbose_name = '潜血双联-Hb' , choices = RESULT_CHOICES , default = 0 , null = True ,
+    occult_Hb = models.IntegerField( verbose_name = '潜血双联-Hb' , choices = RESULT_CHOICES , null = True ,
                                      blank = True )
     occult_Hb_status = models.IntegerField( verbose_name = '潜血双联-Hb状态' , choices = STATUS_CHOICES , null = True ,
                                             blank = True )
     occult_Hb_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True , blank = True )
-    hp = models.IntegerField( verbose_name = '幽门螺旋杆菌抗原' , choices = RESULT_CHOICES , default = 0 , null = True ,
+    hp = models.IntegerField( verbose_name = '幽门螺旋杆菌抗原' , choices = RESULT_CHOICES , null = True ,
                               blank = True )
     hp_status = models.IntegerField( verbose_name = '幽门螺旋杆菌抗原状态' , choices = STATUS_CHOICES , null = True ,
                                      blank = True )
     hp_reference_range = models.CharField( verbose_name = '参考值' , max_length = 255 , null = True , blank = True )
-    calprotectin = models.IntegerField( verbose_name = '钙卫蛋白' , choices = RESULT_CHOICES , default = 0 , null = True ,
+    calprotectin = models.IntegerField( verbose_name = '钙卫蛋白' , choices = RESULT_CHOICES , null = True ,
                                         blank = True )
     calprotectin_status = models.IntegerField( verbose_name = '钙卫蛋白状态' , choices = STATUS_CHOICES , null = True ,
                                                blank = True )

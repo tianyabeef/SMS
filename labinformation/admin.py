@@ -90,13 +90,16 @@ def get_status(objects , carbon_source , tax_name , field_name , obj_field):
     ma = obj.max_value
     mi = float( mi )
     ma = float( ma )
-    if obj_field < mi:
-        obj_field_status = 2  # 偏低
-    elif obj_field > ma:
-        obj_field_status = 0  # 偏高
+    if obj_field is None:
+        return None , None
     else:
-        obj_field_status = 1  # 正常
-    result = obj.reference_range
+        if obj_field < mi:
+            obj_field_status = 2  # 偏低
+        elif obj_field > ma:
+            obj_field_status = 0  # 偏高
+        else:
+            obj_field_status = 1  # 正常
+        result = obj.reference_range
     return obj_field_status , result
 
 
@@ -953,7 +956,11 @@ class QpcrIndexesResource( resources.ModelResource ):
             instance.ct = 9  # TODO 当ct未检出时，提供一个默认值
         else:
             point = {'x': instance.ct}
-            instance.concentration = float( formula( point ) )
+            '''ct值为0时，不适合ct计算公式'''
+            if float( instance.ct ) == 0:
+                instance.concentration = 0
+            else:
+                instance.concentration = float( formula( point ) )
             if ReferenceRange.objects.filter( index_name = QpcrIndexes._meta.get_field(
                     'concentration' ).verbose_name , carbon_source = instance.carbon_source ,
                                               tax_name = instance.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考范围
@@ -1215,7 +1222,11 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         formula_content = CTformula.objects.filter( number = obj.formula_number ) [0].formula_content
         formula = Solver( formula_content , precision = 32 )
         point = {'x': obj.ct}
-        obj.concentration = float( formula( point ) )
+        '''ct值为0时，不适合ct计算公式'''
+        if float(obj.ct) == 0:
+            obj.concentration = 0
+        else:
+            obj.concentration = float( formula( point ) )
         if ReferenceRange.objects.filter( index_name = QpcrIndexes._meta.get_field(
                 'concentration' ).verbose_name , carbon_source = obj.carbon_source ,
                                           tax_name = obj.genus.english_name ).count( ) != 0:  # 根据字段的名称查询参考访问
