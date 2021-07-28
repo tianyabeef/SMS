@@ -54,6 +54,7 @@ class Quenstion( models.Model ):
     cholesterol = models.CharField( verbose_name = '总胆固醇' , max_length = 255 , null = True , blank = True )
     hdl = models.CharField( verbose_name = 'HDL-C' , max_length = 255 , null = True , blank = True )
     blood_glucose = models.CharField( verbose_name = '餐后血糖' , max_length = 255 , null = True , blank = True )
+    fbj = models.CharField( verbose_name = '空腹血糖' , max_length = 255 , null = True , blank = True )
     blood_pressure = models.CharField( verbose_name = '血压' , max_length = 255 , null = True , blank = True )
     trioxypurine = models.CharField( verbose_name = '尿酸' , max_length = 255 , null = True , blank = True )
     is_status = models.IntegerField( verbose_name = '状态' , choices = TEST_CHOICES , default = 0 , null = True ,

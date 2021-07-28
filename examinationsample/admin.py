@@ -815,8 +815,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
                 # for tmp in data.values( ):
                 #     DataInformation( **tmp ).save( ) # TODO 数据中心
-
-                data.update( {'receive_sample_date': str( datetime.date.today( ) )} )
+                data.update( {'receive_sample_date': str( sample.receive_sample_date )} )
                 data.update( {'report_testing_date': str( datetime.date.today( ) )} )
                 jinja_env = jinja2.Environment( )
                 jinja_env.filters ["point"] = self.point_format

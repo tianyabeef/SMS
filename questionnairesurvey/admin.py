@@ -55,14 +55,16 @@ class QuenstionResource( resources.ModelResource ):
             'province' , 'waistline' , 'bmi_value' , 'name' , 'gender' , 'age' , 'height' , 'weight' , 'phone' ,
             'email' , 'complaint' , 'condition' , 'exhaust' , 'classification' , 'unwell' , 'smoke' ,
             'antibiotic_consumption' , 'probiotic_supplements' , 'dietary_habit' ,
-            'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'blood_pressure' ,
+            'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'fbj' ,
+            'blood_pressure' ,
             'trioxypurine')
         export_order = (
             'id' , 'sample_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'age_sgement' ,
             'province' , 'waistline' , 'bmi_value' , 'name' , 'gender' , 'age' , 'height' , 'weight' , 'phone' ,
             'email' , 'complaint' , 'condition' , 'exhaust' , 'classification' , 'unwell' , 'smoke' ,
             'antibiotic_consumption' , 'probiotic_supplements' , 'dietary_habit' ,
-            'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'blood_pressure' ,
+            'allergen' , 'anamnesis' , 'triglyceride' , 'cholesterol' , 'hdl' , 'blood_glucose' , 'fbj' ,
+            'blood_pressure' ,
             'trioxypurine')
 
     @staticmethod
@@ -80,13 +82,13 @@ class QuenstionResource( resources.ModelResource ):
     def get_diff_headers(self):
         return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '年龄分段' , '地域' , '腰围' , 'BMI值' , '姓名' , '性别' , '年龄' ,
                 '身高' , '体重' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
-                '近1个月抗生素食用' , '近两周益生菌益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
+                '近1个月抗生素食用' , '近两周益生菌益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' , '空腹血糖' ,
                 '血压' , '尿酸']
 
     def get_export_headers(self):
         return ['id' , '样本编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '年龄分段' , '地域' , '腰围' , 'BMI值' , '姓名' , '性别' , '年龄' ,
                 '身高' , '体重' , '电话' , "邮箱" , '主诉' , '近1个月排便情况' , '近1个月大便频次' , '自评布里斯托分级' , '近1个月胃肠道不适症状' , '吸烟饮酒' ,
-                '近1个月抗生素食用' , '近两周益生菌益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' ,
+                '近1个月抗生素食用' , '近两周益生菌益生元补充' , '饮食习惯' , '过敏源' , '既往病史' , '甘油三酯' , '总胆固醇' , 'HDL-C' , '餐后血糖' , '空腹血糖' ,
                 '血压' , '尿酸']
 
     def before_import_row(self , row , **kwargs):
@@ -120,21 +122,21 @@ class QuenstionResource( resources.ModelResource ):
         row ['carbon_source_zh'] = row ['碳源中文名称']
         row ['genus_zh'] = row ['菌种中文名称']
         row ['name'] = row ['姓名']
-        row ['gender'] = self.sex_value_display(row ['性别'])
+        row ['gender'] = self.sex_value_display( row ['性别'] )
         row ['age'] = row ['年龄']
         row ['age_sgement'] = row ['年龄分段']
         row ['province'] = row ['地域']
         if row ['身高'] is not None:
-            if float(row ['身高']) > 0:
+            if float( row ['身高'] ) > 0:
                 row ['height'] = float( row ['身高'] ) / 100  # 体重单位转换为mi
         else:
             row ['height'] = row ['身高']
         row ['weight'] = row ['体重']
         row ['waistline'] = row ['腰围']
         if (row ['height'] is not None) and (row ['weight'] is not None):
-            if (float(row ['height'] )> 0) and (float(row ['weight']) > 0):
+            if (float( row ['height'] ) > 0) and (float( row ['weight'] ) > 0):
                 row ['bmi_value'] = float( row ['weight'] ) / (
-                            float( row ['height'] ) * float( row ['height'] ))  # BMI值由系统自动计算
+                        float( row ['height'] ) * float( row ['height'] ))  # BMI值由系统自动计算
         else:
             row ['bmi_value'] = row ['BMI值']
         row ['phone'] = row ['电话']
@@ -154,6 +156,7 @@ class QuenstionResource( resources.ModelResource ):
         row ['cholesterol'] = row ['总胆固醇']
         row ['hdl'] = row ['HDL-C']
         row ['blood_glucose'] = row ['餐后血糖']
+        row ['fbj'] = row ['空腹血糖']
         row ['blood_pressure'] = row ['血压']
         row ['trioxypurine'] = row ['尿酸']
         if instance:
@@ -194,10 +197,10 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         }) ,
         ('疾病' , {
             'fields': (('antibiotic_consumption' , 'probiotic_supplements') ,
-                       ( 'dietary_habit' ,) ,
+                       ('dietary_habit' ,) ,
                        ('allergen' , 'anamnesis' ,) ,
                        ('triglyceride' , 'cholesterol' ,) ,
-                       ('hdl' , 'blood_glucose' , 'trioxypurine'))
+                       ('hdl' , 'blood_glucose' , 'fbj' , 'trioxypurine'))
         })
     )
 
