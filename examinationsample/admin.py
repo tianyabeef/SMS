@@ -262,7 +262,7 @@ class SampleResource( resources.ModelResource ):
             else:
                 raise forms.ValidationError( "套餐编号不是唯一，请核实基础数据" )
         # else:
-            # raise forms.ValidationError( "样本的检查项已经存在，请删除检查项" ) #TODO 后续做严格调整
+        # raise forms.ValidationError( "样本的检查项已经存在，请删除检查项" ) #TODO 后续做严格调整
 
 
 @admin.register( Sample )
@@ -449,9 +449,9 @@ class ProgressResource( resources.ModelResource ):
 @admin.register( Progress )
 class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-        'id' , 'sample_number' , 'internal_number' , 'wjxx_testing_date' ,
-        'cgzb_testing_date' , 'shzb_testing_date' , 'SCFAs_testing_date' ,
-        'qPCR_testing_date' , 'degradation_testing_date' ,
+        'id' , 'sample_number' , 'internal_number' , 'is_wjxx' , 'wjxx_testing_date' ,
+        'is_cgzb' , 'cgzb_testing_date' , 'is_shzb' , 'shzb_testing_date' , 'is_scfa' , 'SCFAs_testing_date' ,
+        'is_qpcr' , 'qPCR_testing_date' , 'is_qyjj' , 'degradation_testing_date' ,
         'report_testing_date' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ("-sample_number" ,)
@@ -625,7 +625,8 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 digestive_constipation = 0
                 digestive_diarrhea = 0
                 '''初始化偏高，偏低的异常状态'''
-                risk , st = Risk.objects.get_or_create( sample_number = obj.sample_number )
+                risk , st = Risk.objects.get_or_create( sample_number = obj.sample_number ,
+                                                        internal_number = obj.internal_number )
                 meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number )
                 scfasIndexes = ScfasIndexes.objects.filter( sample_number = obj.sample_number ,
@@ -655,13 +656,13 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                             digestive_constipation = (1 + 2.97002415119877 / (
                                     float( scfas.acetic_acid ) / float( scfas.propionic )) + 4.60469584970147 / (
                                                               float( scfas.acetic_acid ) / float( scfas.butyric ))) / (
-                                                                 39.8959183583737 / (
-                                                                 float( scfas.acetic_acid ) / float(
-                                                             scfas.isobutyric_acid )) + 33.5702967741936 / (
-                                                                         float( scfas.acetic_acid ) / float(
-                                                                     scfas.valeric )) + 27.6137713653937 / (
-                                                                         float( scfas.acetic_acid ) / float(
-                                                                     scfas.isovaleric )))  # TODO 改为公式编号
+                                                             39.8959183583737 / (
+                                                             float( scfas.acetic_acid ) / float(
+                                                         scfas.isobutyric_acid )) + 33.5702967741936 / (
+                                                                     float( scfas.acetic_acid ) / float(
+                                                                 scfas.valeric )) + 27.6137713653937 / (
+                                                                     float( scfas.acetic_acid ) / float(
+                                                                 scfas.isovaleric )))  # TODO 改为公式编号
                             metaboilic = float( scfas.butyric ) / float( scfas.acetic_acid )
                 '''便秘腹泻判读\糖代谢判读'''
                 risk.digestive_constipation = digestive_constipation

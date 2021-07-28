@@ -118,60 +118,62 @@ class Progress( models.Model ):
 
 class Risk( models.Model ):
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
     digestive_constipation_formula_number = models.CharField( verbose_name = "便秘公式唯一编号" , max_length = 255 )
     digestive_constipation = models.FloatField( verbose_name = '消化道症状便秘判读' , null = True , blank = True )
     digestive_constipation_reference_range = models.CharField( verbose_name = '消化道症状便秘参考范围' , max_length = 255 ,
                                                                null = True ,
                                                                blank = True )
-    digestive_constipation_status = models.CharField( verbose_name = '消化道症状便秘状态' , max_length = 255,
-                                                         null = True ,
-                                                         blank = True )
+    digestive_constipation_status = models.CharField( verbose_name = '消化道症状便秘状态' , max_length = 255 ,
+                                                      null = True ,
+                                                      blank = True )
     digestive_diarrhea_formula_number = models.CharField( verbose_name = "腹泻公式唯一编号" , max_length = 255 )
     digestive_diarrhea = models.FloatField( verbose_name = '消化道症状腹泻判读' , null = True , blank = True )
     digestive_diarrhea_reference_range = models.CharField( verbose_name = '消化道症状腹泻参考范围' , max_length = 255 ,
                                                            null = True ,
                                                            blank = True )
-    digestive_diarrhea_status = models.CharField( verbose_name = '消化道症状腹泻状态'  , max_length = 255,
-                                                     null = True ,
-                                                     blank = True )
+    digestive_diarrhea_status = models.CharField( verbose_name = '消化道症状腹泻状态' , max_length = 255 ,
+                                                  null = True ,
+                                                  blank = True )
     metaboilic_formula_number = models.CharField( verbose_name = "糖代谢公式唯一编号" , max_length = 255 )
     metaboilic = models.FloatField( verbose_name = '代谢水平糖代谢判读' , null = True , blank = True )
     metaboilic_reference_range = models.CharField( verbose_name = '代谢水平糖代谢参考范围' , max_length = 255 , null = True ,
                                                    blank = True )
-    metaboilic_status = models.CharField( verbose_name = '代谢水平糖代谢状态' , max_length = 255 ,  null = True ,
-                                             blank = True )
+    metaboilic_status = models.CharField( verbose_name = '代谢水平糖代谢状态' , max_length = 255 , null = True ,
+                                          blank = True )
     metaboilicx = models.FloatField( verbose_name = '代谢水平血脂判读' , null = True , blank = True )
     metaboilicx_reference_range = models.CharField( verbose_name = '代谢水平血脂参考范围' , max_length = 255 , null = True ,
                                                     blank = True )
-    metaboilicx_status = models.CharField( verbose_name = '代谢水平血脂状态' , max_length = 255 ,  null = True ,
-                                              blank = True )
+    metaboilicx_status = models.CharField( verbose_name = '代谢水平血脂状态' , max_length = 255 , null = True ,
+                                           blank = True )
     metaboilicf = models.FloatField( verbose_name = '代谢水平肥胖判读' , null = True , blank = True )
     metaboilicf_reference_range = models.CharField( verbose_name = '代谢水平肥胖参考范围' , max_length = 255 , null = True ,
                                                     blank = True )
-    metaboilicf_status = models.CharField( verbose_name = '代谢水平肥胖状态' , max_length = 255 ,  null = True ,
-                                              blank = True )
+    metaboilicf_status = models.CharField( verbose_name = '代谢水平肥胖状态' , max_length = 255 , null = True ,
+                                           blank = True )
     gut_immunity = models.FloatField( verbose_name = '肠道炎症' , null = True , blank = True )
     gut_immunity_reference_range = models.CharField( verbose_name = '肠道炎症参考范围' , max_length = 255 , null = True ,
                                                      blank = True )
-    gut_immunity_status = models.CharField( verbose_name = '肠道炎症状态'  , max_length = 255, null = True ,
-                                               blank = True )
+    gut_immunity_status = models.CharField( verbose_name = '肠道炎症状态' , max_length = 255 , null = True ,
+                                            blank = True )
 
     gut_immunityp = models.FloatField( verbose_name = '肠道屏障' , null = True , blank = True )
     gut_immunityp_reference_range = models.CharField( verbose_name = '肠道屏障参考范围' , max_length = 255 , null = True ,
                                                       blank = True )
-    gut_immunityp_status = models.CharField( verbose_name = '肠道屏障状态' , max_length = 255 ,  null = True ,
-                                                blank = True )
+    gut_immunityp_status = models.CharField( verbose_name = '肠道屏障状态' , max_length = 255 , null = True ,
+                                             blank = True )
 
     gut_immunityx = models.FloatField( verbose_name = '消化道肿瘤' , null = True , blank = True )
     gut_immunityx_reference_range = models.CharField( verbose_name = '消化道肿瘤参考范围' , max_length = 255 , null = True ,
                                                       blank = True )
     gut_immunityx_status = models.CharField( verbose_name = '消化道肿瘤状态' , max_length = 255 , null = True ,
-                                                blank = True )
+                                             blank = True )
     gut_disorder = models.FloatField( verbose_name = '肠道紊乱' , null = True , blank = True )
     gut_disorder_reference_range = models.CharField( verbose_name = '肠道紊乱参考范围' , max_length = 255 , null = True ,
                                                      blank = True )
-    gut_disorder_status = models.CharField( verbose_name = '肠道紊乱状态' , max_length = 255 ,  null = True ,
-                                               blank = True )
+    gut_disorder_status = models.CharField( verbose_name = '肠道紊乱状态' , max_length = 255 , null = True ,
+                                            blank = True )
+
     class Meta:
         verbose_name = '样本风险判读'
         verbose_name_plural = verbose_name

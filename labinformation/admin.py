@@ -44,12 +44,14 @@ def create_risk(obj , key , key_obj , low_or_high , QpcrIndexes=False):
     """
     if QpcrIndexes:
         MetaRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
+                                               internal_number = obj.internal_number,
                                                carbon_source = obj.carbon_source ,
                                                genus = obj.genus ,
                                                index_name = obj.genus_zh ,
                                                is_status = low_or_high ,
                                                blood_fat = 0 , fat = 0 )
         GutRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
+                                              internal_number = obj.internal_number,
                                               carbon_source = obj.carbon_source ,
                                               genus = obj.genus ,
                                               index_name = obj.genus_zh ,
@@ -57,12 +59,14 @@ def create_risk(obj , key , key_obj , low_or_high , QpcrIndexes=False):
                                               infection = 0 , scherm = 0 , cancer = 0 )
     else:
         MetaRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
+                                               internal_number = obj.internal_number,
                                                carbon_source = obj.carbon_source ,
                                                genus = obj.genus ,
                                                index_name = key_obj._meta.get_field( key ).verbose_name ,
                                                is_status = low_or_high ,
                                                blood_fat = 0 , fat = 0 )
         GutRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
+                                              internal_number = obj.internal_number,
                                               carbon_source = obj.carbon_source ,
                                               genus = obj.genus ,
                                               index_name = key_obj._meta.get_field( key ).verbose_name ,
@@ -1860,7 +1864,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                    obj.acetic_acid / obj.valeric) + 27.6137713653937 / float(
                                                                    obj.acetic_acid / obj.isovaleric))
                 metaboilic = obj.butyric / obj.acetic_acid
-                risk , stat = Risk.objects.get_or_create( sample_number = obj.sample_number )
+                risk , stat = Risk.objects.get_or_create( sample_number = obj.sample_number ,internal_number = obj.internal_number)
                 risk.digestive_diarrhea = digestive_diarrhea
                 risk.metaboilic = metaboilic
                 risk.save( )
