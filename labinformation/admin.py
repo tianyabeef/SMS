@@ -1001,7 +1001,7 @@ class QpcrIndexesForm( forms.ModelForm ):
         return self.cleaned_data ['formula_number']
 
     def clean_ct(self):
-        if float(self.cleaned_data ['ct']) == 0:
+        if float( self.cleaned_data ['ct'] ) == 0:
             self.cleaned_data ['ct'] = 9  # TODO 当ct未检出时，提供一个默认值
         return self.cleaned_data ['ct']
 
@@ -1021,13 +1021,13 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     search_fields = ('internal_number' ,)
 
     def get_search_results(self , request , queryset , search_term):
-        if not (search_term.strip( ) == "") :
+        if not (search_term.strip( ) == ""):
             search_term_split = re.split( ' +' , search_term.strip( ) )
             qlist = []
             for search_term in search_term_split:
                 for field in self.search_fields:
-                    qlist.append(Q( **{'{}__iregex'.format( field ): search_term} ))
-            return queryset.filter( reduce( lambda x , y: x | y , qlist ) ) , True #按照内部编号进行查询，顺序按照搜索顺序
+                    qlist.append( Q( **{'{}__iregex'.format( field ): search_term} ) )
+            return queryset.filter( reduce( lambda x , y: x | y , qlist ) ) , True  # 按照内部编号进行查询，顺序按照搜索顺序
         else:
             return super( ).get_search_results( request , queryset , search_term )
 
@@ -1157,7 +1157,8 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             t += 1
             if obj.is_status == 1:
                 '''修改初始化偏高，偏低的异常状态的数值'''
-                meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                meta_risk_indexes = MetaRiskIndexes.objects.filter( sample_number = obj.sample_number ,
+                                                                    index_name = obj.genus_zh )
                 if meta_risk_indexes.count( ) > 0:
                     for meta_risk_index in meta_risk_indexes:
                         if meta_risk_index.index_name in meta_risk:
@@ -1184,7 +1185,8 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                                                                    risk_type_number = "FXDL0002" ,
                                                                                    index_name = meta_risk_index.index_name ).low_value
                             meta_risk_index.save( )
-                gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number )
+                gut_risk_indexes = GutRiskIndexes.objects.filter( sample_number = obj.sample_number ,
+                                                                  index_name = obj.genus_zh )
                 if gut_risk_indexes.count( ) > 0:
                     for gut_risk_index in gut_risk_indexes:
                         if gut_risk_index.index_name in gut_risk:
@@ -1267,19 +1269,19 @@ class ScfasIndexesResource( resources.ModelResource ):
         model = ScfasIndexes
         skip_unchanged = True
         fields = (
-        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
-        'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
-        'isovaleric' ,
-        'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
-        'isobutyric_acid_ratio' , 'valeric_ratio' ,
-        'isovaleric_ratio')
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
+            'isovaleric' ,
+            'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
+            'isobutyric_acid_ratio' , 'valeric_ratio' ,
+            'isovaleric_ratio')
         export_order = (
-        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
-        'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
-        'isovaleric' ,
-        'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
-        'isobutyric_acid_ratio' , 'valeric_ratio' ,
-        'isovaleric_ratio')
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
+            'isovaleric' ,
+            'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
+            'isobutyric_acid_ratio' , 'valeric_ratio' ,
+            'isovaleric_ratio')
 
     def get_diff_headers(self):
         return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
@@ -2278,8 +2280,9 @@ class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 @admin.register( MetaRiskIndexes )
 class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-    'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'blood_fat' ,
-    'fat')
+        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' ,
+        'blood_fat' ,
+        'fat')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
     view_on_site = False
