@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib import admin
 from import_export import resources
-from basicdata.models import Agent , Province , Age , CheckType , RiskItem , RiskReferenceRange , RiskItemDefault
+from basicdata.models import Agent , Province , Age , CheckType , RiskItem , RiskReferenceRange , RiskItemDefault , \
+    DetectionLimit
 from basicdata.models import CTformula
 from basicdata.models import Carbon
 from basicdata.models import CheckItem
@@ -1113,6 +1114,7 @@ class RiskItemDefaultAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_per_page = 20
     # list_filter =
     search_fields = ('index_name' ,)
+
     # resource_class = ProvinceResource
     # form = CheckItemForm
     # list_editable =
@@ -1128,4 +1130,51 @@ class RiskItemDefaultAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             obj.historys = "风险名称:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
         else:
             obj.historys = obj.historys + "\n" + "风险名称:" + obj.index_name + ";时间:" + datetime.date.today( ).__str__( )
+        obj.save( )
+
+
+@admin.register( DetectionLimit )
+class DetectionLimitAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
+    list_display = ('tax_names' , 'min_layout' , 'min_value' , 'create_date' , 'writer')
+    list_display_links = ('tax_names' ,)
+    readonly_fields = ('historys',)
+    ordering = ('-id' ,)
+    view_on_site = False
+    list_max_show_all = 100
+    list_per_page = 20
+    list_filter = ['tax_name' , ]
+    # search_fields = ('tax_name' ,)
+    # resource_class = ReferenceRangeResource
+    # form = ReferenceRangeForm
+    # list_editable =
+    # actions =
+    fieldsets = (
+        ('基本信息' , {
+            'fields': ('tax_name' , 'carbon_source' ,)
+        }) ,
+        ('参考范围' , {
+            'fields': (('min_layout' , 'min_value') , ('max_layout' , 'max_value') ,)
+        }) ,
+        ('历史版本' , {
+            'fields': ('historys' , 'writer' , 'note') ,
+        }) ,
+    )
+
+    def tax_names(self , obj):
+        return Genus.objects.get( english_name = obj.tax_name ).china_name
+
+    tax_names.short_description = '菌种'
+
+    def get_changeform_initial_data(self , request):
+        initial = super( ).get_changeform_initial_data( request )
+        initial ['writer'] = request.user.last_name + ' ' + request.user.first_name
+        return initial
+
+    def save_model(self , request , obj , form , change):
+        if obj.historys is None:
+            obj.historys =";碳源:" + obj.carbon_source.name + ";菌种:" + obj.tax_name + ";最小:" + str(
+                obj.min_value ) + ";时间:" + datetime.date.today( ).__str__( )
+        else:
+            obj.historys = obj.historys + "\n" + ";碳源:" + obj.carbon_source.name + ";菌种:" + obj.tax_name + ";最小:" + str(
+                obj.min_value ) + ";时间:" + datetime.date.today( ).__str__( )
         obj.save( )

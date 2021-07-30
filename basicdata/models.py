@@ -314,3 +314,25 @@ class Province( models.Model ):
 
     def __str__(self):
         return '%s' % self.name
+
+
+# Qpcr 检出限
+class DetectionLimit( models.Model ):
+    carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE )
+    tax_name = models.CharField( verbose_name = '菌种英文名称' , max_length = 255 , unique = True )
+    min_layout = models.CharField( verbose_name = '最小值未检出显示形式' , max_length = 255 , null = True , blank = True )
+    min_value = models.FloatField( verbose_name = '最小值' , null = True , blank = True )
+    max_layout = models.CharField( verbose_name = '最大值未检出显示形式' , max_length = 255 , null = True , blank = True )
+    max_value = models.FloatField( verbose_name = '最大值' , null = True , blank = True )
+    create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
+    historys = models.TextField( verbose_name = "历史填写版本" , blank = True , null = True )
+    writer = models.CharField( verbose_name = "创建人" , max_length = 255 , blank = True , null = True )
+    note = models.TextField( verbose_name = '备注' , max_length = 255 , blank = True , null = True )
+
+    class Meta:
+        verbose_name = 'qpcr检出限'
+        verbose_name_plural = verbose_name
+        unique_together = ('carbon_source' , 'tax_name')
+
+    def __str__(self):
+        return '%s' % self.tax_name

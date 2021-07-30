@@ -1,5 +1,7 @@
 import datetime
 import re
+from functools import reduce
+from django.db.models import Q
 import tablib
 from django.contrib import admin
 from import_export import resources
@@ -44,14 +46,14 @@ def create_risk(obj , key , key_obj , low_or_high , QpcrIndexes=False):
     """
     if QpcrIndexes:
         MetaRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
-                                               internal_number = obj.internal_number,
+                                               internal_number = obj.internal_number ,
                                                carbon_source = obj.carbon_source ,
                                                genus = obj.genus ,
                                                index_name = obj.genus_zh ,
                                                is_status = low_or_high ,
                                                blood_fat = 0 , fat = 0 )
         GutRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
-                                              internal_number = obj.internal_number,
+                                              internal_number = obj.internal_number ,
                                               carbon_source = obj.carbon_source ,
                                               genus = obj.genus ,
                                               index_name = obj.genus_zh ,
@@ -59,14 +61,14 @@ def create_risk(obj , key , key_obj , low_or_high , QpcrIndexes=False):
                                               infection = 0 , scherm = 0 , cancer = 0 )
     else:
         MetaRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
-                                               internal_number = obj.internal_number,
+                                               internal_number = obj.internal_number ,
                                                carbon_source = obj.carbon_source ,
                                                genus = obj.genus ,
                                                index_name = key_obj._meta.get_field( key ).verbose_name ,
                                                is_status = low_or_high ,
                                                blood_fat = 0 , fat = 0 )
         GutRiskIndexes.objects.get_or_create( sample_number = obj.sample_number ,
-                                              internal_number = obj.internal_number,
+                                              internal_number = obj.internal_number ,
                                               carbon_source = obj.carbon_source ,
                                               genus = obj.genus ,
                                               index_name = key_obj._meta.get_field( key ).verbose_name ,
@@ -108,25 +110,29 @@ class ConventionalIndexResource( resources.ModelResource ):
         model = ConventionalIndex
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'occult_Tf' ,
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'occult_Tf' ,
             'occult_Hb' , 'hp' , 'calprotectin' ,
             'ph_value' ,
             'sample_type' , 'colour')
         export_order = (
-            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'occult_Tf' ,
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'occult_Tf' ,
             'occult_Hb' , 'hp' , 'calprotectin' ,
             'ph_value' ,
             'sample_type' , 'colour')
 
     def get_diff_headers(self):
-        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' , '幽门螺旋杆菌 抗原（HP-Ag）' ,
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' ,
+                '幽门螺旋杆菌 抗原（HP-Ag）' ,
                 '钙卫蛋白' , 'PH值' ,
-                '样本类型' , '颜色' ]
+                '样本类型' , '颜色']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' , '幽门螺旋杆菌 抗原（HP-Ag）' ,
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '潜血双联-Tf' , '潜血双联-Hb' ,
+                '幽门螺旋杆菌 抗原（HP-Ag）' ,
                 '钙卫蛋白' , 'PH值' ,
-                '样本类型' , '颜色' ]
+                '样本类型' , '颜色']
 
     def before_import_row(self , row , **kwargs):
         """
@@ -260,7 +266,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def occult_Hb_status_colored(self , obj):
         if obj.occult_Hb_status == 0:
-            return format_html( '<b style="background:{};">{}</b>' , 'red' ,  "异常" )
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , "异常" )
         elif obj.occult_Hb_status == 2:
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_occult_Hb_status_display( ) )
         else:
@@ -270,7 +276,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def hp_status_colored(self , obj):
         if obj.hp_status == 0:
-            return format_html( '<b style="background:{};">{}</b>' , 'red' ,  "异常" )
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , "异常" )
         elif obj.hp_status == 2:
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_hp_status_display( ) )
         else:
@@ -280,7 +286,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
     def calprotectin_status_colored(self , obj):
         if obj.calprotectin_status == 0:
-            return format_html( '<b style="background:{};">{}</b>' , 'red' ,  "异常" )  # TODO 偏高改为异常
+            return format_html( '<b style="background:{};">{}</b>' , 'red' , "异常" )  # TODO 偏高改为异常
         elif obj.calprotectin_status == 2:
             return format_html( '<b style="background:{};">{}</b>' , 'blue' , obj.get_calprotectin_status_display( ) )
         else:
@@ -361,7 +367,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                     for key , status in {"occult_Tf": obj.occult_Tf_status , "occult_Hb": obj.occult_Hb_status ,
                                          "calprotectin": obj.calprotectin_status , "hp": obj.hp_status}.items( ):
                         if status == 0:
-                            unusual_high = "%s,%s;" % (   #常规指标，展示形式'''PH值;PH值;'''
+                            unusual_high = "%s,%s;" % (  # 常规指标，展示形式'''PH值;PH值;'''
                                 unusual_high ,
                                 ConventionalIndex._meta.get_field( key ).verbose_name)
                             '''MetaRiskIndexes   GutRiskIndexes信息新增一条'''
@@ -369,13 +375,13 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                                 create_risk( obj , key , ConventionalIndex , "偏高" , False )
                     if obj.ph_value_status != 1:
                         if obj.ph_value_status == 0:
-                            unusual_high = "%s,%s;" % (   #常规指标，展示形式'''PH值;PH值;'''
+                            unusual_high = "%s,%s;" % (  # 常规指标，展示形式'''PH值;PH值;'''
                                 unusual_high ,
                                 ConventionalIndex._meta.get_field( "ph_value" ).verbose_name)
                             if obj.carbon_source.name == "粪便":
                                 create_risk( obj , "ph_value" , ConventionalIndex , "偏高" )
                         else:
-                            unusual_low = "%s,%s;" % (    #常规指标，展示形式'''PH值;PH值;'''
+                            unusual_low = "%s,%s;" % (  # 常规指标，展示形式'''PH值;PH值;'''
                                 unusual_low ,
                                 ConventionalIndex._meta.get_field(
                                     "ph_value" ).verbose_name)
@@ -560,17 +566,19 @@ class BioChemicalIndexesResource( resources.ModelResource ):
         model = BioChemicalIndexes
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'fecal_nitrogen' ,
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'fecal_nitrogen' ,
             'bile_acid')
         export_order = (
-            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'fecal_nitrogen' ,
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'fecal_nitrogen' ,
             'bile_acid')
 
     def get_diff_headers(self):
-        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '粪氨' , '胆汁酸']
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '粪氨' , '胆汁酸']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' , '对内编号','碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '粪氨' , '胆汁酸']
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '粪氨' , '胆汁酸']
 
     def before_import_row(self , row , **kwargs):
         """
@@ -749,7 +757,7 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
                                          "bile_acid": obj.bile_acid_status}.items( ):
                         if status != 1:
                             if status == 0:
-                                unusual_high = "%s,%s;" % (    #常规指标，展示形式'''胆汁酸;'''
+                                unusual_high = "%s,%s;" % (  # 常规指标，展示形式'''胆汁酸;'''
                                     unusual_high ,
                                     BioChemicalIndexes._meta.get_field( key ).verbose_name)
                                 if obj.carbon_source.name == "粪便":
@@ -864,19 +872,21 @@ class QpcrIndexesResource( resources.ModelResource ):
         model = QpcrIndexes
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'ct' ,
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'ct' ,
             'formula_number' ,
             'concentration')
         export_order = (
-            'id' , 'sample_number','internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'ct' ,
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'ct' ,
             'formula_number' ,
             'concentration')
 
     def get_diff_headers(self):
-        return ['id' , '样本编号','对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , 'ct' , '公式编号' , '浓度']
 
     def export(self , queryset=None , *args , **kwargs):
         """
@@ -991,7 +1001,7 @@ class QpcrIndexesForm( forms.ModelForm ):
         return self.cleaned_data ['formula_number']
 
     def clean_ct(self):
-        if float( self.cleaned_data ['ct'] ) == 0:
+        if float(self.cleaned_data ['ct']) == 0:
             self.cleaned_data ['ct'] = 9  # TODO 当ct未检出时，提供一个默认值
         return self.cleaned_data ['ct']
 
@@ -1007,8 +1017,20 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 38
-    list_filter = ('is_status' , 'carbon_source')
-    search_fields = ('sample_number' ,)
+    list_filter = ('is_status' , 'carbon_source' , 'genus')
+    search_fields = ('internal_number' ,)
+
+    def get_search_results(self , request , queryset , search_term):
+        if not (search_term.strip( ) == "") :
+            search_term_split = re.split( ' +' , search_term.strip( ) )
+            qlist = []
+            for search_term in search_term_split:
+                for field in self.search_fields:
+                    qlist.append(Q( **{'{}__iregex'.format( field ): search_term} ))
+            return queryset.filter( reduce( lambda x , y: x | y , qlist ) ) , True #按照内部编号进行查询，顺序按照搜索顺序
+        else:
+            return super( ).get_search_results( request , queryset , search_term )
+
     resource_class = QpcrIndexesResource
     form = QpcrIndexesForm
     # list_editable =
@@ -1223,7 +1245,7 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         formula = Solver( formula_content , precision = 32 )
         point = {'x': obj.ct}
         '''ct值为0时，不适合ct计算公式'''
-        if float(obj.ct) == 0:
+        if float( obj.ct ) == 0:
             obj.concentration = 0
         else:
             obj.concentration = float( formula( point ) )
@@ -1244,26 +1266,28 @@ class ScfasIndexesResource( resources.ModelResource ):
     class Meta:
         model = ScfasIndexes
         skip_unchanged = True
-        fields = ('id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
-                  'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
-                  'isovaleric' ,
-                  'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
-                  'isobutyric_acid_ratio' , 'valeric_ratio' ,
-                  'isovaleric_ratio')
-        export_order = ('id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
-                        'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
-                        'isovaleric' ,
-                        'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
-                        'isobutyric_acid_ratio' , 'valeric_ratio' ,
-                        'isovaleric_ratio')
+        fields = (
+        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+        'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
+        'isovaleric' ,
+        'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
+        'isobutyric_acid_ratio' , 'valeric_ratio' ,
+        'isovaleric_ratio')
+        export_order = (
+        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+        'total_acid' , 'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' , 'valeric' ,
+        'isovaleric' ,
+        'acid_first' , 'acid_second' , 'acetic_acid_ratio' , 'propionic_ratio' , 'butyric_ratio' ,
+        'isobutyric_acid_ratio' , 'valeric_ratio' ,
+        'isovaleric_ratio')
 
     def get_diff_headers(self):
-        return ['id' , '样本编号','对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
                 '异丁酸' , '戊酸' , '异戊酸' , '乙丙丁酸占总酸比' , '异丁戊异戊占总酸比' , '乙酸占比' , '丙酸占比' , '丁酸占比' ,
                 '异丁酸占比' , '戊酸占比' , '异戊酸占比']
 
     def get_export_headers(self):
-        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '总酸' , '乙酸' , '丙酸' , '丁酸' ,
                 '异丁酸' , '戊酸' , '异戊酸' , '乙丙丁酸占总酸比' , '异丁戊异戊占总酸比' , '乙酸占比' , '丙酸占比' , '丁酸占比' ,
                 '异丁酸占比' , '戊酸占比' , '异戊酸占比']
 
@@ -1714,22 +1738,22 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                         if status != 1:
                             if status == 0:
                                 if obj.carbon_source.name == "粪便":  # 对风险判读做数据处理
-                                    unusual_high = "%s,%s;" % ( #异丁酸;乙酸
+                                    unusual_high = "%s,%s;" % (  # 异丁酸;乙酸
                                         unusual_high ,
                                         ScfasIndexes._meta.get_field( key ).verbose_name)
                                     create_risk( obj , key , ScfasIndexes , "偏高" , False )
                                 else:
-                                    unusual_high = "%s,%s,%s;" % (  #木糖醇,异丁酸;果糖,乙酸
+                                    unusual_high = "%s,%s,%s;" % (  # 木糖醇,异丁酸;果糖,乙酸
                                         unusual_high , obj.carbon_source.name ,
                                         ScfasIndexes._meta.get_field( key ).verbose_name)
                             else:
                                 if obj.carbon_source.name == "粪便":
-                                    unusual_low = "%s,%s;" % (  #异丁酸;乙酸
+                                    unusual_low = "%s,%s;" % (  # 异丁酸;乙酸
                                         unusual_low ,
                                         ScfasIndexes._meta.get_field( key ).verbose_name)
                                     create_risk( obj , key , ScfasIndexes , "偏低" , False )
                                 else:
-                                    unusual_low = "%s,%s,%s;" % (#木糖醇,异丁酸;果糖,乙酸
+                                    unusual_low = "%s,%s,%s;" % (  # 木糖醇,异丁酸;果糖,乙酸
                                         unusual_low , obj.carbon_source.name ,
                                         ScfasIndexes._meta.get_field( key ).verbose_name)
                     ''' 把异常检测结果存到数据库中 '''
@@ -1869,13 +1893,15 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                              obj.isovaleric
             '''保存信息的时候，对糖代谢能力，便秘腹泻做判读'''
             if obj.carbon_source.name == "粪便":
-                digestive_diarrhea = (1 + 2.97002415119877 / float(obj.acetic_acid / obj.propionic) + 4.60469584970147 / float(
-                        obj.acetic_acid / obj.butyric)) / (39.8959183583737 / float(
-                        obj.acetic_acid / obj.isobutyric_acid) + 33.5702967741936 / float(
-                                                                   obj.acetic_acid / obj.valeric) + 27.6137713653937 / float(
-                                                                   obj.acetic_acid / obj.isovaleric))
+                digestive_diarrhea = (1 + 2.97002415119877 / float(
+                    obj.acetic_acid / obj.propionic ) + 4.60469584970147 / float(
+                    obj.acetic_acid / obj.butyric )) / (39.8959183583737 / float(
+                    obj.acetic_acid / obj.isobutyric_acid ) + 33.5702967741936 / float(
+                    obj.acetic_acid / obj.valeric ) + 27.6137713653937 / float(
+                    obj.acetic_acid / obj.isovaleric ))
                 metaboilic = obj.butyric / obj.acetic_acid
-                risk , stat = Risk.objects.get_or_create( sample_number = obj.sample_number ,internal_number = obj.internal_number)
+                risk , stat = Risk.objects.get_or_create( sample_number = obj.sample_number ,
+                                                          internal_number = obj.internal_number )
                 risk.digestive_diarrhea = digestive_diarrhea
                 risk.metaboilic = metaboilic
                 risk.save( )
@@ -2012,17 +2038,19 @@ class DegradationIndexesResource( resources.ModelResource ):
         model = DegradationIndexes
         skip_unchanged = True
         fields = (
-            'id' , 'sample_number' ,'internal_number', 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'degradation' ,
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'degradation' ,
             'gas')
         export_order = (
-            'id' , 'sample_number','internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' , 'degradation' ,
+            'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'carbon_source_zh' , 'genus_zh' ,
+            'degradation' ,
             'gas')
 
     def get_export_headers(self):
-        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '降解率' , '产气']
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '降解率' , '产气']
 
     def get_diff_headers(self):
-        return ['id' , '样本编号' ,'对内编号', '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '降解率' , '产气']
+        return ['id' , '样本编号' , '对内编号' , '碳源' , '菌种' , '碳源中文名称' , '菌种中文名称' , '降解率' , '产气']
 
     def before_import_row(self , row , **kwargs):
         """
@@ -2233,7 +2261,7 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
 
 @admin.register( IndexesUnusual )
 class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('sample_number' ,'internal_number' , 'check_type')
+    list_display = ('sample_number' , 'internal_number' , 'check_type')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
     view_on_site = False
@@ -2249,7 +2277,9 @@ class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
 @admin.register( MetaRiskIndexes )
 class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id','sample_number' ,'internal_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'blood_fat' , 'fat')
+    list_display = (
+    'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'blood_fat' ,
+    'fat')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
     view_on_site = False
@@ -2261,8 +2291,9 @@ class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
 @admin.register( GutRiskIndexes )
 class GutRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id',
-    'sample_number' ,'internal_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' , 'infection' , 'scherm' , 'cancer')
+    list_display = ('id' ,
+                    'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'index_name' , 'is_status' ,
+                    'infection' , 'scherm' , 'cancer')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
     view_on_site = False
