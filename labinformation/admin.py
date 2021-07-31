@@ -1016,7 +1016,7 @@ class GenusListFilter( admin.SimpleListFilter ):
         h = l
         l.remove( "empty" )
         value = list( product( l , l ) )
-        label = []
+        label = ["CS-EF-AKK"]
         for i in value:
             label.append( "%s-%s" % (i [0] , i [1]) )
         return tuple( zip( h + label , h + label ) )
@@ -1025,10 +1025,17 @@ class GenusListFilter( admin.SimpleListFilter ):
         genus_english_name = self.value( )
         if genus_english_name:
             if re.match( ".*-.*" , genus_english_name ):
-                '''适用于（FN,AKK）'''
-                return queryset.filter(
-                    genus__english_name = re.split( "-" , genus_english_name ) [0] ) | queryset.filter(
-                    genus__english_name = re.split( "-" , genus_english_name ) [1] )
+                if re.split( "-" , genus_english_name ).__len__( ) == 3:
+                    '''适用于（FN,AKK,BIFI）'''
+                    return queryset.filter(
+                        genus__english_name = re.split( "-" , genus_english_name ) [0] ) | queryset.filter(
+                        genus__english_name = re.split( "-" , genus_english_name ) [1] )| queryset.filter(
+                        genus__english_name = re.split( "-" , genus_english_name ) [2] )
+                else:
+                    '''适用于（FN,AKK）'''
+                    return queryset.filter(
+                        genus__english_name = re.split( "-" , genus_english_name ) [0] ) | queryset.filter(
+                        genus__english_name = re.split( "-" , genus_english_name ) [1] )
             else:
                 return queryset.filter( genus__english_name = genus_english_name )
         return queryset
