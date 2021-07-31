@@ -23,6 +23,7 @@ from django.contrib import messages
 from examinationsample.models import Progress , Sample , Risk
 from django.db.models.query import QuerySet
 from django.utils.html import format_html
+from itertools import product
 
 admin.site.empty_value_display = '-empty-'
 
@@ -1006,6 +1007,33 @@ class QpcrIndexesForm( forms.ModelForm ):
         return self.cleaned_data ['ct']
 
 
+class GenusListFilter( admin.SimpleListFilter ):
+    title = "菌种"
+    parameter_name = "genus"
+
+    def lookups(self , request , model_admin):
+        l = [i.english_name for i in Genus.objects.all( )]
+        h = l
+        l.remove( "empty" )
+        value = list( product( l , l ) )
+        label = []
+        for i in value:
+            label.append( "%s-%s" % (i [0] , i [1]) )
+        return tuple( zip( h + label , h + label ) )
+
+    def queryset(self , request , queryset):
+        genus_english_name = self.value( )
+        if genus_english_name:
+            if re.match( ".*-.*" , genus_english_name ):
+                '''适用于（FN,AKK）'''
+                return queryset.filter(
+                    genus__english_name = re.split( "-" , genus_english_name ) [0] ) | queryset.filter(
+                    genus__english_name = re.split( "-" , genus_english_name ) [1] )
+            else:
+                return queryset.filter( genus__english_name = genus_english_name )
+        return queryset
+
+
 @admin.register( QpcrIndexes )
 class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
@@ -1017,7 +1045,7 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 38
-    list_filter = ('is_status' , 'carbon_source' , 'genus')
+    list_filter = ('is_status' , 'carbon_source' , GenusListFilter)
     search_fields = ('internal_number' ,)
 
     def get_search_results(self , request , queryset , search_term):
