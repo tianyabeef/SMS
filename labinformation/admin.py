@@ -1013,13 +1013,14 @@ class GenusListFilter( admin.SimpleListFilter ):
 
     def lookups(self , request , model_admin):
         l = [i.english_name for i in Genus.objects.all( )]
-        h = l
         l.remove( "empty" )
+        h = ["FAE" , "BT" , "FN" , "LAC-BIFI" , "CS-EF-AKK" , "CS" , "LAC" , "BIFI" , "EF" , "AKK"]
         value = list( product( l , l ) )
-        label = ["CS-EF-AKK"]
+        label = []
         for i in value:
             label.append( "%s-%s" % (i [0] , i [1]) )
-        return tuple( zip( h + label , h + label ) )
+        label.remove("LAC-BIFI")
+        return tuple( zip( h+label , h+label ) )
 
     def queryset(self , request , queryset):
         genus_english_name = self.value( )
@@ -1029,7 +1030,7 @@ class GenusListFilter( admin.SimpleListFilter ):
                     '''适用于（FN,AKK,BIFI）'''
                     return queryset.filter(
                         genus__english_name = re.split( "-" , genus_english_name ) [0] ) | queryset.filter(
-                        genus__english_name = re.split( "-" , genus_english_name ) [1] )| queryset.filter(
+                        genus__english_name = re.split( "-" , genus_english_name ) [1] ) | queryset.filter(
                         genus__english_name = re.split( "-" , genus_english_name ) [2] )
                 else:
                     '''适用于（FN,AKK）'''
