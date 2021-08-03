@@ -229,7 +229,7 @@ class Template( models.Model ):
     use_count = models.IntegerField( verbose_name = '使用次数' , default = 0 )
     file_template = models.FileField( verbose_name = '模板报告' , upload_to = "uploads/template/%Y/%m" , null = True ,
                                       blank = True )
-    create_date = models.DateField( verbose_name = '创建时间' , auto_now = True )
+    create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
     historys = models.TextField( verbose_name = "历史填写日期" , blank = True , null = True )
     writer = models.CharField( verbose_name = "创建人" , max_length = 255 , blank = True , null = True )
     note = models.TextField( verbose_name = '备注' , max_length = 255 , blank = True , null = True )
