@@ -27,6 +27,13 @@ from itertools import product
 
 admin.site.empty_value_display = '-empty-'
 
+def convert_scfa(value):
+    formula_content = CTformula.objects.filter( formula_group__id = 6 ).order_by( '-create_date' ) [
+        0].formula_content  # id 为6的一定为“SCFA粪便悬液” 类别
+    formula = Solver( formula_content , precision = 32 )
+    point = {'x': value}
+    converted_value = float( formula( point ) )
+    return converted_value
 
 def get_meta_risk(risk_items):
     if risk_items.count( ) == 1:
@@ -908,7 +915,7 @@ class QpcrIndexesResource( resources.ModelResource ):
         else:
             iterable = queryset
         for obj in iterable:
-            cts = CTformula.objects.filter( tax_name = obj.genus_zh ).order_by( "-version_num" )
+            cts = CTformula.objects.filter( tax_name = obj.genus_zh ).order_by( "-version_num" ) #根据菌名称的中文进行搜索
             if cts.count( ) > 0:
                 obj.formula_number = cts [0].number
             data.append( self.export_resource( obj ) )
@@ -1003,7 +1010,7 @@ class QpcrIndexesForm( forms.ModelForm ):
 
     def clean_ct(self):
         if float( self.cleaned_data ['ct'] ) == 0:
-            self.cleaned_data ['ct'] = 9  # TODO 当ct未检出时，提供一个默认值
+            self.cleaned_data ['ct'] = 0  # TODO 当ct未检出时，提供一个默认值
         return self.cleaned_data ['ct']
 
 
@@ -1045,7 +1052,7 @@ class GenusListFilter( admin.SimpleListFilter ):
 @admin.register( QpcrIndexes )
 class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
-        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'ct' , 'concentration' ,
+        'id' , 'sample_number' , 'internal_number' , 'carbon_source' , 'genus' , 'ct_view' , 'concentration_view' ,
         'concentration_reference_range' ,
         'concentration_status_colored' , 'formula_number' , 'is_status')
     list_display_links = ('sample_number' ,)
@@ -1075,6 +1082,19 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         'sample_number' , 'carbon_source' , 'genus' , 'ct' , 'concentration' , 'concentration_reference_range' ,
         'concentration_status' ,
         'formula_number' , 'is_status')
+    def ct_view(self ,obj):
+        if obj.ct == 0:
+            return "未检出"
+        else:
+            return obj.ct
+    ct_view.short_description = "CT"
+    
+    def concentration_view(self ,obj):
+        if obj.concentration == 0:
+            return "未检出"
+        else:
+            return obj.concentration
+    concentration_view.short_description = "QPCR浓度"
 
     def concentration_status_colored(self , obj):
         if obj.concentration_status == 0:
@@ -1452,8 +1472,21 @@ class ScfasIndexesResource( resources.ModelResource ):
 
     def before_save_instance(self , instance , using_transactions , dry_run):
         """
-            Override to add additional logic. Does nothing by default.
+            导入前，对粪便的短链脂肪酸乘以系数10
         """
+        if (instance.carbon_source.id == 18) and (instance.acetic_acid is not None):  # 如果碳源是18  粪便  乙酸
+            instance.acetic_acid = convert_scfa( instance.acetic_acid )
+        if (instance.carbon_source.id == 18) and (instance.propionic is not None):  # 如果碳源是18  粪便  丙酸
+            instance.propionic = convert_scfa( instance.propionic )
+        if (instance.carbon_source.id == 18) and (instance.butyric is not None):  # 如果碳源是18  粪便  丁酸
+            instance.butyric = convert_scfa( instance.butyric )
+        if (instance.carbon_source.id == 18) and (instance.isobutyric_acid is not None):  # 如果碳源是18  粪便  异丁酸
+            instance.isobutyric_acid = convert_scfa( instance.isobutyric_acid )
+        if (instance.carbon_source.id == 18) and (instance.valeric is not None):  # 如果碳源是18  粪便  戊酸
+            instance.valeric = convert_scfa( instance.valeric )
+        if (instance.carbon_source.id == 18) and (instance.isovaleric is not None):  # 如果碳源是18  粪便  异戊酸
+            instance.isovaleric = convert_scfa( instance.isovaleric )
+
         if (instance.acetic_acid is not None) and (instance.propionic is not None) and (
                 instance.butyric is not None) and (
                 instance.isobutyric_acid is not None) and (instance.valeric is not None) and (
@@ -1868,9 +1901,12 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def save_model(self , request , obj , form , change):
 
         if obj.acetic_acid is not None:
+            if (obj.carbon_source.id == 18) and (not change): #如果碳源是18  粪便
+                obj.acetic_acid = convert_scfa( obj.acetic_acid )
+            else:
+                obj.acetic_acid = float(obj.acetic_acid)
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'acetic_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
-
                 status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
                                                        obj.genus.english_name , 'acetic_acid' ,
                                                        obj.acetic_acid )
@@ -1879,6 +1915,10 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             else:
                 self.message_user( request , '乙酸 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
         if obj.propionic is not None:
+            if (obj.carbon_source.id == 18) and (not change): #如果碳源是18  粪便
+                obj.propionic = convert_scfa( obj.propionic )
+            else:
+                obj.propionic = float(obj.propionic)
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'propionic' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
                 status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
@@ -1888,6 +1928,10 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             else:
                 self.message_user( request , '丙酸 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
         if obj.butyric is not None:
+            if (obj.carbon_source.id == 18) and (not change): #如果碳源是18  粪便
+                obj.butyric = convert_scfa( obj.butyric )
+            else:
+                obj.butyric = float(obj.butyric)
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'butyric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
                 status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
@@ -1897,6 +1941,10 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             else:
                 self.message_user( request , '丁酸 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
         if obj.isobutyric_acid is not None:
+            if (obj.carbon_source.id == 18) and (not change): #如果碳源是18  粪便
+                obj.isobutyric_acid = convert_scfa( obj.isobutyric_acid )
+            else:
+                obj.isobutyric_acid = float(obj.isobutyric_acid)
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'isobutyric_acid' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
                 status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
@@ -1907,6 +1955,10 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             else:
                 self.message_user( request , '异丁酸 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
         if obj.valeric is not None:
+            if (obj.carbon_source.id == 18) and (not change): #如果碳源是18  粪便
+                obj.valeric = convert_scfa( obj.valeric )
+            else:
+                obj.valeric = float(obj.valeric)
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'valeric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
                 status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
@@ -1916,6 +1968,10 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
             else:
                 self.message_user( request , '戊酸 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
         if obj.isovaleric is not None:
+            if (obj.carbon_source.id == 18) and (not change): #如果碳源是18  粪便
+                obj.isovaleric = convert_scfa( obj.isovaleric )
+            else:
+                obj.isovaleric = float(obj.isovaleric)
             if ReferenceRange.objects.filter( index_name = ScfasIndexes._meta.get_field(
                     'isovaleric' ).verbose_name ).count( ) != 0:  # 根据字段的名称查询参考访问
                 status , reference_range = get_status( ScfasIndexes , obj.carbon_source ,
@@ -1924,11 +1980,10 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 obj.isovaleric_status = status
             else:
                 self.message_user( request , '异戊酸 检测指标没有参考范围的基础数据，请先添加基础数据中心' , level = messages.ERROR )
-
         if (obj.acetic_acid is not None) and (obj.propionic is not None) and (obj.butyric is not None) and (
                 obj.isobutyric_acid is not None) and (obj.valeric is not None) and (obj.isovaleric is not None):
-            obj.total_acid = obj.acetic_acid + obj.propionic + obj.butyric + obj.isobutyric_acid + obj.valeric + \
-                             obj.isovaleric
+            obj.total_acid = float(obj.acetic_acid) + float(obj.propionic) + float(obj.butyric) + float(obj.isobutyric_acid) + float(obj.valeric) + \
+                             float(obj.isovaleric)
             '''保存信息的时候，对糖代谢能力，便秘腹泻做判读'''
             if obj.carbon_source.name == "粪便":
                 digestive_diarrhea = (1 + 2.97002415119877 / float(

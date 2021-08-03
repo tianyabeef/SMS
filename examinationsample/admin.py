@@ -12,7 +12,7 @@ from docxtpl import DocxTemplate , RichText
 from import_export import resources
 from import_export.admin import ImportExportActionModelAdmin
 import tablib
-from basicdata.models import CheckItem , Agent , RiskReferenceRange
+from basicdata.models import CheckItem , Agent , RiskReferenceRange , DetectionLimit
 from basicdata.models import Product , Carbon , Genus , Template
 from datacenter.models import DataInformation
 from examinationreport.models import Reports
@@ -491,15 +491,27 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         return value
 
     @staticmethod
-    def tran_format(value):
+    def tran_format(value , tax_name=None):
+        detection_dict = {}
+        detectionLimits = DetectionLimit.objects.all( )
+        for i in detectionLimits:
+            detection_dict [i.tax_name] = i.min_layout
+
         if value is not None:
-            if float( value ) > 1000 or (0.001 > float( value ) > 0) or float( value ) < -0.001:  # TODO 当数值多少用科学计数法比较合理
+            value = float( value )
+            if value > 1000 or (0.001 > value > 0) or value < -0.001:  # TODO 当数值多少用科学计数法比较合理
                 value = SciNotation( value , 2 )  # 保留小数点2位
             else:
                 rule = "{0:.%sf}" % 2
-                value = rule.format( float( value ) )
+                value = rule.format( value )
+            if (value == "0.00") and (tax_name is not None):
+                """
+                    :param value:
+                    :return:将0转出未检出（<XXXXX）
+                    """
+                value = detection_dict [tax_name]
         else:
-            value = 0
+            value = "缺失"
         return value
 
     @staticmethod
@@ -818,17 +830,17 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 data.update( {'receive_sample_date': str( sample.receive_sample_date )} )
                 data.update( {'report_testing_date': str( datetime.date.today( ) )} )
                 jinja_env = jinja2.Environment( )
-                jinja_env.filters ["point"] = self.point_format
-                jinja_env.filters ["trannone"] = self.tran_none
+                jinja_env.filters ["point"] = self.point_format  # 数据库的有效位位数较多，在报告中保留有效数值减少
+                jinja_env.filters ["trannone"] = self.tran_none  # 缺失值标记 常规问题调查
                 jinja_env.filters ["color"] = self.set_color
-                jinja_env.filters ["tran"] = self.tran_format
-                jinja_env.filters ["tran1"] = self.tran_format1
-                jinja_env.filters ["tran3"] = self.tran_format3
-                jinja_env.filters ["pos"] = self.pos_value_display
-                jinja_env.filters ["sex"] = self.sex_value_display
-                jinja_env.filters ['percent'] = self.percent_value_display
-                jinja_env.filters ['percent1'] = self.percent_value_display1
-                jinja_env.filters ['percent3'] = self.percent_value_display3
+                jinja_env.filters ["tran"] = self.tran_format  # 科学计数法显示qpcr 2位有效数字
+                jinja_env.filters ["tran1"] = self.tran_format1  # 科学计数法显示qpcr 1位有效数字
+                jinja_env.filters ["tran3"] = self.tran_format3  # 科学计数法显示qpcr 3位有效数字
+                jinja_env.filters ["pos"] = self.pos_value_display  # 阴阳性显示
+                jinja_env.filters ["sex"] = self.sex_value_display  # 性别显示
+                jinja_env.filters ['percent'] = self.percent_value_display  # 短链脂肪酸 占比 2位有效数字
+                jinja_env.filters ['percent1'] = self.percent_value_display1  # 短链脂肪酸 占比 1位有效数字
+                jinja_env.filters ['percent3'] = self.percent_value_display3  # 短链脂肪酸 占比 3位有效数字
                 jinja_env.filters ['side'] = self.side_value_display
                 unusuals = IndexesUnusual.objects.filter( sample_number = obj.sample_number )
                 data ["unusuals"] = unusuals
