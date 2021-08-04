@@ -1474,18 +1474,23 @@ class ScfasIndexesResource( resources.ModelResource ):
         """
             导入前，对粪便的短链脂肪酸乘以系数10
         """
-        if (instance.carbon_source.id == 18) and (instance.acetic_acid is not None):  # 如果碳源是18  粪便  乙酸
-            instance.acetic_acid = convert_scfa( instance.acetic_acid )
-        if (instance.carbon_source.id == 18) and (instance.propionic is not None):  # 如果碳源是18  粪便  丙酸
-            instance.propionic = convert_scfa( instance.propionic )
-        if (instance.carbon_source.id == 18) and (instance.butyric is not None):  # 如果碳源是18  粪便  丁酸
-            instance.butyric = convert_scfa( instance.butyric )
-        if (instance.carbon_source.id == 18) and (instance.isobutyric_acid is not None):  # 如果碳源是18  粪便  异丁酸
-            instance.isobutyric_acid = convert_scfa( instance.isobutyric_acid )
-        if (instance.carbon_source.id == 18) and (instance.valeric is not None):  # 如果碳源是18  粪便  戊酸
-            instance.valeric = convert_scfa( instance.valeric )
-        if (instance.carbon_source.id == 18) and (instance.isovaleric is not None):  # 如果碳源是18  粪便  异戊酸
-            instance.isovaleric = convert_scfa( instance.isovaleric )
+        scfasIndexes_object = ScfasIndexes.objects.filter( sample_number = instance.sample_number ,
+                                     internal_number = instance.internal_number ,
+                                     carbon_source = instance.carbon_source )
+        if scfasIndexes_object.count() == 1:
+            if scfasIndexes_object[0].total_acid is None:
+                if (instance.carbon_source.id == 18) and (instance.acetic_acid is not None):  # 如果碳源是18  粪便  乙酸
+                    instance.acetic_acid = convert_scfa( instance.acetic_acid )
+                if (instance.carbon_source.id == 18) and (instance.propionic is not None):  # 如果碳源是18  粪便  丙酸
+                    instance.propionic = convert_scfa( instance.propionic )
+                if (instance.carbon_source.id == 18) and (instance.butyric is not None):  # 如果碳源是18  粪便  丁酸
+                    instance.butyric = convert_scfa( instance.butyric )
+                if (instance.carbon_source.id == 18) and (instance.isobutyric_acid is not None):  # 如果碳源是18  粪便  异丁酸
+                    instance.isobutyric_acid = convert_scfa( instance.isobutyric_acid )
+                if (instance.carbon_source.id == 18) and (instance.valeric is not None):  # 如果碳源是18  粪便  戊酸
+                    instance.valeric = convert_scfa( instance.valeric )
+                if (instance.carbon_source.id == 18) and (instance.isovaleric is not None):  # 如果碳源是18  粪便  异戊酸
+                    instance.isovaleric = convert_scfa( instance.isovaleric )
 
         if (instance.acetic_acid is not None) and (instance.propionic is not None) and (
                 instance.butyric is not None) and (
