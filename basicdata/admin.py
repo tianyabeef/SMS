@@ -456,12 +456,12 @@ def get_reference_range(min_value , max_value , layout , point):
     """
     if layout == 0:
         rule = "{0:.%sf}" % point
-        reference_range = "%s~%s" % (rule.format( min_value ) , rule.format( max_value ))
+        reference_range = "%s-%s" % (rule.format( min_value ) , rule.format( max_value ))
     elif layout == 1:
-        reference_range = '%s~%s' % (SciNotation( min_value , point ) , SciNotation( max_value , point ))
+        reference_range = '%s-%s' % (SciNotation( min_value , point ) , SciNotation( max_value , point ))
     elif layout == 2:
         rule = f'.{point}%'
-        reference_range = "%s~%s" % (format( min_value , rule ) , format( max_value , rule ))
+        reference_range = "%s-%s" % (format( min_value , rule ) , format( max_value , rule ))
     else:
         if (min_value == 1) and (max_value == 1):
             reference_range = "阳性（+）"
@@ -972,24 +972,24 @@ class ProvinceAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
 class RiskReferenceRangeForm( forms.ModelForm ):
     reference_range1 = forms.CharField( label = "低风险参考值" ,
-                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1-3;5-7" ,
                                         required = True , widget = forms.TextInput(
-            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1-3;5-7"} ) ,
                                         error_messages = {'required': '这个字段是必填项。'} )
     reference_range2 = forms.CharField( label = "注意参考值" ,
-                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1-3;5-7" ,
                                         required = True , widget = forms.TextInput(
-            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1-3;5-7"} ) ,
                                         error_messages = {'required': '这个字段是必填项。'} )
     reference_range3 = forms.CharField( label = "中风险参考值" ,
-                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1-3;5-7" ,
                                         required = True , widget = forms.TextInput(
-            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1-3;5-7"} ) ,
                                         error_messages = {'required': '这个字段是必填项。'} )
     reference_range4 = forms.CharField( label = "高风险参考值" ,
-                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1~3;5~7" ,
+                                        help_text = "不能为空，可填写多个参考范围，之间用;隔开。示例：1-3;5-7" ,
                                         required = True , widget = forms.TextInput(
-            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1~3;5~7"} ) ,
+            attrs = {'class': 'vTextField , form-control' , 'placeholder': "示例：1-3;5-7"} ) ,
                                         error_messages = {'required': '这个字段是必填项。'} )
 
     class Meta:
@@ -1000,8 +1000,8 @@ class RiskReferenceRangeForm( forms.ModelForm ):
         numbers = re.split( '[；;]' , self.cleaned_data ["reference_range1"].strip( ) )
         if len( numbers ) > 0:
             for number in numbers:
-                if not re.match( r'-?\d?\.?\d+~\d?\.?\d+' , number ):
-                    raise forms.ValidationError( "没有破折号~" )
+                if not re.match( r'-?\d?\.?\d+-\d?\.?\d+' , number ):
+                    raise forms.ValidationError( "没有破折号-" )
         else:
             raise forms.ValidationError( "风险参考范围不存在" )
         return self.cleaned_data ["reference_range1"]
@@ -1010,8 +1010,8 @@ class RiskReferenceRangeForm( forms.ModelForm ):
         numbers = re.split( '[；;]' , self.cleaned_data ["reference_range2"].strip( ) )
         if len( numbers ) > 0:
             for number in numbers:
-                if not re.match( r'-?\d?\.?\d+~\d?\.?\d+' , number ):
-                    raise forms.ValidationError( "没有破折号~" )
+                if not re.match( r'-?\d?\.?\d+-\d?\.?\d+' , number ):
+                    raise forms.ValidationError( "没有破折号-" )
         else:
             raise forms.ValidationError( "风险参考范围不存在" )
         return self.cleaned_data ["reference_range2"]
@@ -1020,8 +1020,8 @@ class RiskReferenceRangeForm( forms.ModelForm ):
         numbers = re.split( '[；;]' , self.cleaned_data ["reference_range3"].strip( ) )
         if len( numbers ) > 0:
             for number in numbers:
-                if not re.match( r'-?\d?\.?\d+~\d?\.?\d+' , number ):
-                    raise forms.ValidationError( "没有破折号~" )
+                if not re.match( r'-?\d?\.?\d+-\d?\.?\d+' , number ):
+                    raise forms.ValidationError( "没有破折号-" )
         else:
             raise forms.ValidationError( "风险参考范围不存在" )
         return self.cleaned_data ["reference_range3"]
@@ -1030,8 +1030,8 @@ class RiskReferenceRangeForm( forms.ModelForm ):
         numbers = re.split( '[；;]' , self.cleaned_data ["reference_range4"].strip( ) )
         if len( numbers ) > 0:
             for number in numbers:
-                if not re.match( r'-?\d?\.?\d+~\d?\.?\d+' , number ):
-                    raise forms.ValidationError( "没有破折号~" )
+                if not re.match( r'-?\d?\.?\d+-\d?\.?\d+' , number ):
+                    raise forms.ValidationError( "没有破折号-" )
         else:
             raise forms.ValidationError( "风险参考范围不存在" )
         return self.cleaned_data ["reference_range4"]

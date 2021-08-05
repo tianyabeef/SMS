@@ -45,37 +45,37 @@ def get_status_risk(carbon_source , field_name , obj_field):
     valuegs = re.split( '[；;]' , obj.reference_range4.strip( "[；;]" ) )  # 高风险
     if len( valueds ) > 0:
         for valued in valueds:
-            mi , ma = re.split( "~" , valued )
+            mi , ma = re.split( "-" , valued )
             mi = float( mi )
             ma = float( ma )
             if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "低风险"
-                return obj_field_status , "%s~%s" % (mi , ma)
+                return obj_field_status , "%s-%s" % (mi , ma)
     if len( valuezs ) > 0:
         for valuez in valuezs:
-            mi , ma = re.split( "~" , valuez )
+            mi , ma = re.split( "-" , valuez )
             mi = float( mi )
             ma = float( ma )
             if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "注意"
-                return obj_field_status , "%s~%s" % (mi , ma)
+                return obj_field_status , "%s-%s" % (mi , ma)
     if len( valuezhongs ) > 0:
         for valuezhong in valuezhongs:
-            mi , ma = re.split( "~" , valuezhong )
+            mi , ma = re.split( "-" , valuezhong )
             mi = float( mi )
             ma = float( ma )
             if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "中风险"
-                return obj_field_status , "%s~%s" % (mi , ma)
+                return obj_field_status , "%s-%s" % (mi , ma)
     if len( valuegs ) > 0:
         for valueg in valuegs:
-            mi , ma = re.split( "~" , valueg )
+            mi , ma = re.split( "-" , valueg )
             mi = float( mi )
             ma = float( ma )
             if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "高风险"
-                return obj_field_status , "%s~%s" % (mi , ma)
-    return "未知" , "0~0"  # 3为未知状态
+                return obj_field_status , "%s-%s" % (mi , ma)
+    return "未知" , "0-0"  # 3为未知状态
 
 
 class ChecksForm( forms.ModelForm ):
