@@ -256,7 +256,7 @@ class ConventionalIndexAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ('is_status' ,)
-    search_fields = ('sample_number' ,)
+    search_fields = ('internal_number' ,)
     resource_class = ConventionalIndexResource
     # form = ConventionalIndexForm
     # list_editable =
@@ -677,7 +677,7 @@ class BioChemicalIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ('is_status' ,)
-    search_fields = ('sample_number' ,)
+    search_fields = ('internal_number' ,)
     resource_class = BioChemicalIndexesResource
     form = BioChemicalIndexesForm
     # list_editable =
@@ -1649,7 +1649,7 @@ class ScfasIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ('is_status' , 'carbon_source')
-    search_fields = ('sample_number' ,)
+    search_fields = ('internal_number' ,)
     import_export_args = {'import_resource_class': ScfasIndexesResource , 'export_resource_class': ScfasIndexesResource}
     resource_class = ScfasIndexesResource
     # form =
@@ -2221,7 +2221,7 @@ class DegradationIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin )
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ('is_status' ,)
-    search_fields = ('sample_number' ,)
+    search_fields = ('internal_number' ,)
     resource_class = DegradationIndexesResource
     # form =
     # list_editable =
@@ -2366,7 +2366,7 @@ class IndexesUnusualAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ('check_type' ,)
-    search_fields = ('sample_number' ,)
+    search_fields = ('sample_number' ,'internal_number' ,)
     # resource_class = DegradationIndexesResource
     # form =
     # list_editable =
@@ -2385,7 +2385,7 @@ class MetaRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ('genus' , 'index_name')
-    search_fields = ('sample_number' ,)
+    search_fields = ('sample_number' ,'internal_number' ,)
 
 
 @admin.register( GutRiskIndexes )
@@ -2399,4 +2399,4 @@ class GutRiskIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ('genus' , 'index_name')
-    search_fields = ('sample_number' ,)
+    search_fields = ('sample_number' ,'internal_number' ,)

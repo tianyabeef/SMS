@@ -45,37 +45,37 @@ def get_status_risk(carbon_source , field_name , obj_field):
     valuegs = re.split( '[；;]' , obj.reference_range4.strip( "[；;]" ) )  # 高风险
     if len( valueds ) > 0:
         for valued in valueds:
-            mi , ma = re.split( "-" , valued )
+            mi , ma = re.split( "~" , valued )
             mi = float( mi )
             ma = float( ma )
             if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "低风险"
-                return obj_field_status , "%s-%s" % (mi , ma)
+                return obj_field_status , "%s~%s" % (mi , ma)
     if len( valuezs ) > 0:
         for valuez in valuezs:
-            mi , ma = re.split( "-" , valuez )
+            mi , ma = re.split( "~" , valuez )
             mi = float( mi )
             ma = float( ma )
             if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "注意"
-                return obj_field_status , "%s-%s" % (mi , ma)
+                return obj_field_status , "%s~%s" % (mi , ma)
     if len( valuezhongs ) > 0:
         for valuezhong in valuezhongs:
-            mi , ma = re.split( "-" , valuezhong )
+            mi , ma = re.split( "~" , valuezhong )
             mi = float( mi )
             ma = float( ma )
             if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "中风险"
-                return obj_field_status , "%s-%s" % (mi , ma)
+                return obj_field_status , "%s~%s" % (mi , ma)
     if len( valuegs ) > 0:
         for valueg in valuegs:
-            mi , ma = re.split( "-" , valueg )
+            mi , ma = re.split( "~" , valueg )
             mi = float( mi )
             ma = float( ma )
             if (obj_field > mi) and (obj_field < ma or obj_field == ma):
                 obj_field_status = "高风险"
-                return obj_field_status , "%s-%s" % (mi , ma)
-    return "未知" , "0-0"  # 3为未知状态
+                return obj_field_status , "%s~%s" % (mi , ma)
+    return "未知" , "0~0"  # 3为未知状态
 
 
 class ChecksForm( forms.ModelForm ):
@@ -454,12 +454,12 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         'is_qpcr' , 'qPCR_testing_date' , 'is_qyjj' , 'degradation_testing_date' ,
         'report_testing_date' , 'is_status')
     list_display_links = ('sample_number' ,)
-    ordering = ("-sample_number" ,)
+    ordering = ("-id" ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
     list_filter = ("is_status" ,)
-    search_fields = ('sample_number' ,)
+    search_fields = ('internal_number' ,)
     resource_class = ProgressResource
     # form =
     # list_editable =
@@ -486,7 +486,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         :param value:
         :return:将None转出-
         """
-        if value is None:
+        if (value is None) or (value is ""):
             value = "-"  # 缺失值
         return value
 
@@ -682,12 +682,12 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 status , reference_range = get_status_risk( cb , "便秘" , digestive_constipation )
                 risk.digestive_constipation_status = status
                 risk.digestive_constipation_reference_range = reference_range
-                risk.digestive_diarrhea = digestive_diarrhea
-                status , reference_range = get_status_risk( cb , "便秘" , digestive_diarrhea )
+                risk.digestive_diarrhea = digestive_constipation    #便秘和腹泻的值是一致的
+                status , reference_range = get_status_risk( cb , "腹泻" , digestive_constipation )
                 risk.digestive_diarrhea_status = status
                 risk.digestive_diarrhea_reference_range = reference_range
                 risk.metaboilic = metaboilic
-                status , reference_range = get_status_risk( cb , "腹泻" , metaboilic )
+                status , reference_range = get_status_risk( cb , "糖代谢" , metaboilic )
                 risk.metaboilic_status = status
                 risk.metaboilic_reference_range = reference_range
                 '''血脂'''
@@ -701,22 +701,22 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 risk.metaboilicf_status = status
                 risk.metaboilicf_reference_range = reference_range
                 '''肠道炎症'''
-                risk.gut_immunity = float( infection )
-                status , reference_range = get_status_risk( cb , "肠道炎症" , infection )
+                risk.gut_immunity = float( infection + 55)
+                status , reference_range = get_status_risk( cb , "肠道炎症" , float( infection + 55) )
                 risk.gut_immunity_status = status
                 risk.gut_immunity_reference_range = reference_range
                 '''肠道屏障'''
-                risk.gut_immunityp = float( scherm )
-                status , reference_range = get_status_risk( cb , "肠道屏障" , scherm )
+                risk.gut_immunityp = float( scherm + 55)
+                status , reference_range = get_status_risk( cb , "肠道屏障" , float( scherm + 55) )
                 risk.gut_immunityp_status = status
                 risk.gut_immunityp_reference_range = reference_range
                 '''消化道肿瘤'''
-                risk.gut_immunityx = float( cancer )
-                status , reference_range = get_status_risk( cb , "消化道肿瘤" , cancer )
+                risk.gut_immunityx = float( cancer + 50 )
+                status , reference_range = get_status_risk( cb , "消化道肿瘤" , float( cancer + 50 ) )
                 risk.gut_immunityx_status = status
                 risk.gut_immunityx_reference_range = reference_range
                 '''肠道紊乱'''
-                risk.gut_disorder = (float( infection ) + float( scherm ) + float( cancer )) / 3 * 2
+                risk.gut_disorder = (float( infection + 55 ) + float( scherm + 55 ) + float( cancer + 50 )) / 3 + 2
                 risk.save( )
                 obj.is_status = 1  # 1是标记为风险判读
                 obj.save( )
