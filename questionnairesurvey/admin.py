@@ -6,7 +6,7 @@ from import_export.admin import ImportExportActionModelAdmin
 from import_export.formats import base_formats
 from basicdata.models import Age , Carbon , Genus
 from basicdata.models import Province
-from examinationsample.models import Progress
+from examinationsample.models import Progress , Sample
 from questionnairesurvey.models import Quenstion
 
 admin.site.empty_value_display = '-empty-'
@@ -110,6 +110,10 @@ class QuenstionResource( resources.ModelResource ):
             raise forms.ValidationError( "年龄段在数据库中无法查询到" )
         if Province.objects.filter( name = row ["地域"] ).count( ) == 0:
             raise forms.ValidationError( "地域在数据库中无法查询到" )
+        sample = Sample.objects.filter( sample_number = row ['样本编号'] ) [0]
+        if sample.name != row ['姓名']:
+            raise forms.ValidationError( "姓名不一致" )
+
 
     def get_or_init_instance(self , instance_loader , row):
         """
@@ -262,6 +266,9 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     make_finish.short_description = "1标记完成"
 
     def save_model(self , request , obj , form , change):
+        sample = Sample.objects.filter( sample_number = obj.sample_number )[0]
+        if sample.name != obj.name:
+            self.message_user( request , obj.sample_number+"姓名不一致" , level = messages.ERROR )
         if (obj.height is not None) and (obj.weight is not None):
             if (obj.height > 0) and (obj.weight > 0):
                 obj.bmi_value = float( obj.weight ) / (float( obj.height ) * float( obj.height ))

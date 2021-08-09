@@ -682,7 +682,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 status , reference_range = get_status_risk( cb , "便秘" , digestive_constipation )
                 risk.digestive_constipation_status = status
                 risk.digestive_constipation_reference_range = reference_range
-                risk.digestive_diarrhea = digestive_constipation    #便秘和腹泻的值是一致的
+                risk.digestive_diarrhea = digestive_constipation  # 便秘和腹泻的值是一致的
                 status , reference_range = get_status_risk( cb , "腹泻" , digestive_constipation )
                 risk.digestive_diarrhea_status = status
                 risk.digestive_diarrhea_reference_range = reference_range
@@ -701,13 +701,13 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 risk.metaboilicf_status = status
                 risk.metaboilicf_reference_range = reference_range
                 '''肠道炎症'''
-                risk.gut_immunity = float( infection + 55)
-                status , reference_range = get_status_risk( cb , "肠道炎症" , float( infection + 55) )
+                risk.gut_immunity = float( infection + 55 )
+                status , reference_range = get_status_risk( cb , "肠道炎症" , float( infection + 55 ) )
                 risk.gut_immunity_status = status
                 risk.gut_immunity_reference_range = reference_range
                 '''肠道屏障'''
-                risk.gut_immunityp = float( scherm + 55)
-                status , reference_range = get_status_risk( cb , "肠道屏障" , float( scherm + 55) )
+                risk.gut_immunityp = float( scherm + 55 )
+                status , reference_range = get_status_risk( cb , "肠道屏障" , float( scherm + 55 ) )
                 risk.gut_immunityp_status = status
                 risk.gut_immunityp_reference_range = reference_range
                 '''消化道肿瘤'''
@@ -828,6 +828,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 # for tmp in data.values( ):
                 #     DataInformation( **tmp ).save( ) # TODO 数据中心
                 data.update( {'receive_sample_date': str( sample.receive_sample_date )} )
+                data.update( {'name': str( sample.name )} )
                 data.update( {'report_testing_date': str( datetime.date.today( ) )} )
                 jinja_env = jinja2.Environment( )
                 jinja_env.filters ["point"] = self.point_format  # 数据库的有效位位数较多，在报告中保留有效数值减少
