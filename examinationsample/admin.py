@@ -546,7 +546,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if value is not None:
             if value == 1 or (value is "1"):
                 rt = RichText( )
-                rt.add( pos_nag.get( value ) , color = '#DF0101' )
+                rt.add( pos_nag.get( value ) , color = '#DF0101' , size = 28 )
                 value = rt
             else:
                 value = pos_nag.get( value )
@@ -594,7 +594,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     def set_color(value , color):
         if value is not None:
             rt = RichText( )
-            rt.add( value , color = color )  # 自定义颜色'#DF0101'
+            rt.add( value , color = color , size = 28 )  # 自定义颜色'#DF0101'
             return rt
         else:
             return "-"
@@ -612,12 +612,12 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         if value is not None:
             if value == 0:
                 rt = RichText( )
-                rt.add( '↑' , color = '#DF0101' )
+                rt.add( '↑' , color = '#DF0101' , size = 28 )
             if value == 1:
                 rt = "-"
             if value == 2:
                 rt = RichText( )
-                rt.add( '↓' , color = '#111111' )
+                rt.add( '↓' , color = '#111111' , size = 28 )
         return rt
 
     def make_risk(self , request , queryset):
