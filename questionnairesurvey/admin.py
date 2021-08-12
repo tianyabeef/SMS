@@ -21,11 +21,11 @@ class QuenstionForm( forms.ModelForm ):
                                 required = True , widget = forms.TextInput(
             attrs = {'class': 'vTextField , form-control' , 'placeholder': '示例：江浙沪'} ) ,
                                 error_messages = {'required': '这个字段是必填项。'} )
-    weight = forms.CharField( label = "体重" , help_text = "单位：千克" , required = True ,
+    weight = forms.CharField( label = "体重" , help_text = "单位：千克" , required = False ,
                               widget = forms.NumberInput(
                                   attrs = {'class': ' form-control' , 'placeholder': '示例：60.01'} ) ,
                               error_messages = {'required': '单位：千克'} )
-    height = forms.CharField( label = "身高" , help_text = "单位：米" , required = True ,
+    height = forms.CharField( label = "身高" , help_text = "单位：米" , required = False ,
                               widget = forms.NumberInput(
                                   attrs = {'class': ' form-control' , 'placeholder': '示例：1.68'} ) ,
                               error_messages = {'required': '单位：米'} )
@@ -269,6 +269,10 @@ class QuenstionIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
         sample = Sample.objects.filter( sample_number = obj.sample_number )[0]
         if sample.name != obj.name:
             self.message_user( request , obj.sample_number+"姓名不一致" , level = messages.ERROR )
+        if obj.height is "":
+            obj.height = None
+        if obj.weight is "":
+            obj.weight = None
         if (obj.height is not None) and (obj.weight is not None):
             if (obj.height > 0) and (obj.weight > 0):
                 obj.bmi_value = float( obj.weight ) / (float( obj.height ) * float( obj.height ))

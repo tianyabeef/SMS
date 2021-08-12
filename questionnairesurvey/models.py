@@ -34,7 +34,7 @@ class Quenstion( models.Model ):
     bmi_value = models.DecimalField( verbose_name = 'BMI值' , max_digits = 6 , decimal_places = 2 , null = True ,
                                      blank = True )
     phone = PhoneNumberField( verbose_name = '电话' , null = True , blank = True , help_text = 'Contact phone number' )
-    email = models.EmailField( verbose_name = "邮箱" )
+    email = models.EmailField( verbose_name = "邮箱" , null = True , blank = True)
     complaint = models.CharField( verbose_name = '主诉' , max_length = 255 , null = True , blank = True )
     condition = models.CharField( verbose_name = '近1个月排便情况' , max_length = 255 , null = True , blank = True )
     exhaust = models.CharField( verbose_name = '近1个月大便频次' , max_length = 255 , null = True , blank = True )
