@@ -1085,24 +1085,7 @@ class GenusListFilter( admin.SimpleListFilter ):
                 return queryset.filter( genus__english_name = genus_english_name )
         return queryset
 
-class QpcrIndexesIndexIsStatusFilter( SimpleListFilter ):
-    title = "状态"
-    parameter_name = 'is_status'
 
-    def lookups(self , request , model_admin):
-        return (
-            (1 , '完成') ,
-            (2 , '完成并判读') ,
-            (-1 , '全部'),
-        )
-
-    def queryset(self , request , queryset):
-        if self.value() is None:
-            return queryset.filter( is_status = "0" )
-        if self.value( ) == "-1":
-            return queryset
-        else:
-            return queryset.filter( is_status = self.value() )
 @admin.register( QpcrIndexes )
 class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = (
@@ -1114,7 +1097,7 @@ class QpcrIndexesAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 38
-    list_filter = (QpcrIndexesIndexIsStatusFilter , 'carbon_source' , GenusListFilter)
+    list_filter = ('is_status' , 'carbon_source' , GenusListFilter)
     search_fields = ('internal_number' ,)
 
     def get_search_results(self , request , queryset , search_term):
