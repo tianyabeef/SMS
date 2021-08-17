@@ -107,14 +107,7 @@ class ChecksInline( admin.TabularInline ):
     extra = 1  # 额外新开一个
     fields = ('check_name' , 'is_status' , 'finish_date')
     readonly_fields = ('is_status' , 'finish_date')
-    # # autocomplete_fields = ('title',)   # TODO 当数据量较多是，下拉框会变得很长，有待优化
-    # raw_id_fields = ('check_name',)
-    #
-    #
-    # def get_readonly_fields(self, request, obj=None):
-    #     if obj.is_status == 2:
-    #         self.readonly_fields = ['check_name', 'sample_number', 'finish_date']
-    #     return self.readonly_fields
+
 
 
 class SampleForm( forms.ModelForm ):
@@ -829,6 +822,7 @@ class ProgressAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
                 #     DataInformation( **tmp ).save( ) # TODO 数据中心
                 data.update( {'receive_sample_date': str( sample.receive_sample_date )} )
                 data.update( {'name': str( sample.name )} )
+                data.update( {'sample_number': str( sample.sample_number )} )
                 data.update( {'report_testing_date': str( datetime.date.today( ) )} )
                 jinja_env = jinja2.Environment( )
                 jinja_env.filters ["point"] = self.point_format  # 数据库的有效位位数较多，在报告中保留有效数值减少
