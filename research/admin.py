@@ -876,7 +876,7 @@ class ContractListFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         contracts = Contract.objects.all()
-        value = list(contracts.values_list('contract_number', flat=True))
+        value = [i.contract_number for i in contracts]
         label = ['合同号:' + i.contract_number for i in contracts]
         return tuple(zip(value, label))
 
