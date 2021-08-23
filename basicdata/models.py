@@ -101,9 +101,15 @@ class Product( models.Model ):
 
 
 class Carbon( models.Model ):
+    TYPE_CHOICES = (
+        (0 , '大健康') ,
+        (1 , '科研') ,
+    )
     cid = models.CharField( verbose_name = '碳源编号' , max_length = 255 , unique = True )
     name = models.CharField( verbose_name = '名称' , max_length = 255 , unique = True )  # qpcr数据导入是根据中文名称进行创建对象
     english_name = models.CharField( verbose_name = '英文名称' , max_length = 255 , unique = True )  # 在渲染word报告时使用
+    type = models.IntegerField( verbose_name = '类型' , choices = TYPE_CHOICES , default = 0 , null = True ,
+                                  blank = True )
     ratio = models.CharField( verbose_name = '碳源配比' , max_length = 255 )
     create_date = models.DateField( verbose_name = '创建时间' , auto_now_add = True )
     historys = models.TextField( verbose_name = "历史填写日期" , blank = True , null = True )

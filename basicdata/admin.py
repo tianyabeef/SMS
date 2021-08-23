@@ -388,20 +388,20 @@ class CarbonResource( resources.ModelResource ):
     class Meta:
         model = Carbon
         skip_unchanged = True
-        fields = ('id' , 'cid' , 'name' , 'ratio' , 'create_date' , 'writer' , 'note')
-        export_order = ('id' , 'cid' , 'name' , 'ratio' , 'create_date' , 'writer' , 'note')
+        fields = ('id' , 'cid' , 'name' ,'english_name', 'type', 'create_date' , 'writer' , 'note')
+        export_order = ('id' , 'cid' , 'name' ,'english_name', 'type', 'create_date' , 'writer' , 'note')
 
 
 @admin.register( Carbon )
 class CarbonAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
-    list_display = ('id' , 'cid' , 'name' , 'ratio' , 'create_date')
+    list_display = ('id' , 'cid' , 'name' , 'type' , 'create_date')
     list_display_links = ('cid' ,)
     readonly_fields = ('historys' ,)
     ordering = ('-create_date' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    # list_filter =
+    list_filter = ['type',]
     search_fields = ('name' ,)
     resource_class = CarbonResource
 
