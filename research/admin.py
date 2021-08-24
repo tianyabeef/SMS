@@ -389,7 +389,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
         t = 0  # 选中的总数量
         for obj in queryset:
             t += 1
-            if obj.is_status == 1:
+            if obj.is_status != 9:
                 obj.is_status = 2
                 obj.save( )
                 i += 1
@@ -405,7 +405,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
         t = 0  # 选中的总数量
         for obj in queryset:
             t += 1
-            if obj.is_status == 2:
+            if obj.is_status != 9:
                 obj.is_status = 3
                 obj.save( )
                 i += 1
@@ -421,7 +421,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
         t = 0  # 选中的总数量
         for obj in queryset:
             t += 1
-            if obj.is_status == 3:
+            if obj.is_status != 9:
                 obj.is_status = 4
                 obj.save( )
                 i += 1
@@ -437,7 +437,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
         t = 0  # 选中的总数量
         for obj in queryset:
             t += 1
-            if obj.is_status == 4:
+            if obj.is_status != 9:
                 obj.is_status = 5
                 obj.save( )
                 i += 1
@@ -453,7 +453,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
         t = 0  # 选中的总数量
         for obj in queryset:
             t += 1
-            if obj.is_status == 5:
+            if obj.is_status != 9:
                 obj.is_status = 6
                 obj.save( )
                 i += 1
@@ -469,7 +469,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
         t = 0  # 选中的总数量
         for obj in queryset:
             t += 1
-            if obj.is_status == 6:
+            if obj.is_status != 9:
                 obj.is_status = 7
                 obj.save( )
                 i += 1
@@ -485,7 +485,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
         t = 0  # 选中的总数量
         for obj in queryset:
             t += 1
-            if obj.is_status == 7:
+            if obj.is_status != 9:
                 obj.is_status = 8
                 obj.save( )
                 i += 1
@@ -501,7 +501,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
         t = 0  # 选中的总数量
         for obj in queryset:
             t += 1
-            if obj.is_status == 8:
+            if obj.is_status != 9:
                 obj.is_status = 9
                 obj.save( )
                 i += 1
