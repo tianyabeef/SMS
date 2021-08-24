@@ -84,7 +84,8 @@ class Contract( models.Model ):
 
 
 class InvoiceTitle( models.Model ):
-    title = models.CharField( "发票抬头" , max_length = 100 )
+    title = models.CharField( "发票抬头" , max_length = 255 )
+    note = models.TextField( '备注' , null = True , blank = True )
 
     class Meta:
         verbose_name = '发票抬头'

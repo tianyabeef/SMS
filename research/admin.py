@@ -327,8 +327,7 @@ class ContractAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
                 'historys' , 'project_amount' , 'make_out_amount' , 'amount_in' , 'amount_date' , 'amount_date')
         else:
             self.readonly_fields = (
-                'historys' , 'project_amount' , 'make_out_amount' , 'amount_in' , 'amount_date' , 'amount_date' ,
-                'is_status')
+                'historys' , 'project_amount' , 'make_out_amount' , 'amount_in' , 'amount_date' , 'amount_date')
         return self.readonly_fields
 
     def partner_company_modify(self , obj):
