@@ -1,14 +1,15 @@
 from django.contrib import admin
 import re
 from basicdata.models import Carbon , Age , Province
-from .models import Invoice , Contract , InvoiceTitle , Bill , Accounting , Stuff , ExperimentalData , Material ,Contract
+from .models import Invoice , Contract , InvoiceTitle , Bill , Accounting , Stuff , ExperimentalData , Material , \
+    Contract
 from import_export import resources
 from import_export.formats import base_formats
 from django import forms
 from django.forms.models import BaseInlineFormSet
 import datetime
 from import_export.admin import ImportExportActionModelAdmin , ExportActionModelAdmin
-
+import numpy as np
 from import_export import fields
 from django.contrib import messages
 from django.db.models import Sum
@@ -687,6 +688,7 @@ class StuffAdmin( ExportActionModelAdmin , admin.ModelAdmin ):
             else:
                 n += 1
         self.message_user( request , '选择%s条信息，完成操作%s条，不操作%s条' % (t , i , n) , level = messages.SUCCESS )
+
     make_stuff_submit.short_description = '标记完成'
 
     def get_changeform_initial_data(self , request):
@@ -764,10 +766,12 @@ class ExperimentalDataResource( resources.ModelResource ):
                 ExperimentalData.objects.filter( contract_number = row ['合同号'] , sample_number = row ['样本编号'] ,
                                                  carbon_source = row ['碳源'] ).count( ) > 0):
             raise forms.ValidationError( '合同编号，样本编号、碳源、记录内容联合唯一，不能有冲突。' )
-        if (Age.objects.filter( name = row ["年龄分段"] ).count( ) == 0) and ((row ["年龄分段"] is not None) and (row ["年龄分段"] is not "")):
+        if (Age.objects.filter( name = row ["年龄分段"] ).count( ) == 0) and (
+                (row ["年龄分段"] is not None) and (row ["年龄分段"] is not "")):
             raise forms.ValidationError( "年龄段在数据库中无法查询到" )
 
-        if (Province.objects.filter( name = row ["地域"] ).count( ) == 0) and ((row ["地域"] is not None) and (row ["地域"] is not "")):
+        if (Province.objects.filter( name = row ["地域"] ).count( ) == 0) and (
+                (row ["地域"] is not None) and (row ["地域"] is not "")):
             raise forms.ValidationError( "地域在数据库中无法查询到" )
 
     def get_or_init_instance(self , instance_loader , row):
@@ -868,39 +872,93 @@ class ContractForm( forms.ModelForm ):
             raise forms.ValidationError( "地域在数据库中无法查询到" )
         return self.cleaned_data ["province"]
 
-class ContractListFilter(admin.SimpleListFilter):
+
+class ContractListFilter( admin.SimpleListFilter ):
     '''实验数据中的合同'''
     title = '合同号'
     parameter_name = 'Contract'
 
-    def lookups(self, request, model_admin):
-        contracts = Contract.objects.all()
+    def lookups(self , request , model_admin):
+        contracts = Contract.objects.all( )
         value = [i.contract_number for i in contracts]
         label = ['合同号:' + i.contract_number for i in contracts]
-        return tuple(zip(value, label))
+        return tuple( zip( value , label ) )
 
-    def queryset(self, request, queryset):
-        if self.value() is None:
+    def queryset(self , request , queryset):
+        if self.value( ) is None:
             return queryset
         else:
-            return queryset.filter( contract_number = self.value() )
+            return queryset.filter( contract_number = self.value( ) )
+
+
+class AgeListFilter( admin.SimpleListFilter ):
+    '''实验数据中的合同'''
+    title = '年龄段'
+    parameter_name = 'Age'
+
+    def lookups(self , request , model_admin):
+        contracts = Age.objects.all( )
+        value = [i.name for i in contracts]
+        label = ['年龄段:' + i.name for i in contracts]
+        return tuple( zip( value , label ) )
+
+    def queryset(self , request , queryset):
+        if self.value( ) is None:
+            return queryset
+        else:
+            return queryset.filter( age_sgement = self.value( ) )
+
+
+class ProvinceListFilter( admin.SimpleListFilter ):
+    '''实验数据中的合同'''
+    title = '地域'
+    parameter_name = 'Province'
+
+    def lookups(self , request , model_admin):
+        contracts = Province.objects.all( )
+        value = [i.name for i in contracts]
+        label = ['年龄段:' + i.name for i in contracts]
+        return tuple( zip( value , label ) )
+
+    def queryset(self , request , queryset):
+        if self.value( ) is None:
+            return queryset
+        else:
+            return queryset.filter( province = self.value( ) )
+
+
+class AnamnesisListFilter( admin.SimpleListFilter ):
+    '''实验数据中的合同'''
+    title = '疾病'
+    parameter_name = 'Anamnesis'
+
+    def lookups(self , request , model_admin):
+        contracts = ExperimentalData.objects.all( )
+        value = [i.anamnesis for i in contracts if (i.anamnesis is not None and i.anamnesis is not "")]
+        label = ['疾病:' + i.anamnesis for i in contracts if (i.anamnesis is not None and i.anamnesis is not "")]
+        return tuple( zip( np.unique( value ) , np.unique( label ) ) )
+
+    def queryset(self , request , queryset):
+        if self.value( ) is None:
+            return queryset
+        else:
+            return queryset.filter( anamnesis = self.value( ) )
+
 
 @admin.register( ExperimentalData )
 class ExperimentalDataAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_display = ('id' , 'contract_number' , 'sample_number' , 'internal_number' , 'carbon_source' , 'group' ,
                     'intervention' , 'carbon_source_zh' , 'recordNo' , 'name' , 'gender' , 'age' , 'age_sgement' ,
                     'province' , 'height' , 'weight' , 'fbj' , 'blood_pressure' , 'trioxypurine' , 'triglyceride' ,
-                    'anamnesis' , 'staging' , 'therapies' ,
-                    'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' ,
-                    'valeric' , 'isovaleric' , 'gas' , 'co2' , 'ch4' , 'h2' , 'h2s' , 'degradation' , 'BIFI' , 'LAC' ,
-                    'CS' ,
-                    'FN' , 'EF' , 'BT' , 'AKK' , 'FAE' , 'is_status')
+                    'anamnesis' , 'staging' , 'therapies' , 'is_status')
     list_display_links = ('sample_number' ,)
     ordering = ('-id' ,)
     view_on_site = False
     list_max_show_all = 100
     list_per_page = 20
-    list_filter = ('is_status' , 'carbon_source' ,ContractListFilter)
+    list_filter = (
+    'is_status' , 'carbon_source' , 'gender' , ContractListFilter , AnamnesisListFilter , ProvinceListFilter ,
+    AgeListFilter)
     search_fields = ('sample_number' ,)
     import_export_args = {'import_resource_class': ExperimentalDataResource ,
                           'export_resource_class': ExperimentalDataResource}
