@@ -303,6 +303,7 @@ class ExperimentalData( models.Model ):
     BT = models.FloatField( verbose_name = '多形拟杆菌' , null = True , blank = True )
     AKK = models.FloatField( verbose_name = '阿克曼氏菌' , null = True , blank = True )
     FAE = models.FloatField( verbose_name = '普拉梭菌' , null = True , blank = True )
+    note = models.TextField( '备注' , null = True , blank = True )
     is_status = models.IntegerField( verbose_name = '状态' , choices = TEST_CHOICES , default = 0 , null = True ,
                                      blank = True )
 

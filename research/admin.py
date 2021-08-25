@@ -959,7 +959,7 @@ class ExperimentalDataAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_filter = (
     'is_status' , 'carbon_source' , 'gender' , ContractListFilter , AnamnesisListFilter , ProvinceListFilter ,
     AgeListFilter)
-    search_fields = ('sample_number' ,)
+    search_fields = ('note' ,'age')
     import_export_args = {'import_resource_class': ExperimentalDataResource ,
                           'export_resource_class': ExperimentalDataResource}
     resource_class = ExperimentalDataResource
