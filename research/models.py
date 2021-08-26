@@ -222,24 +222,34 @@ class ExperimentalData( models.Model ):
         (0 , '女性') ,
         (1 , '男性') ,
     )
+    BMI_CHOICES = (
+        (0 , '消瘦') ,
+        (1 , '适宜') ,
+        (2 , '肥胖') ,
+    )
     contract_number = models.CharField( verbose_name = '合同号' , max_length = 255 )
     sample_number = models.CharField( verbose_name = '样本编号' , max_length = 255 )
-    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 )
+    internal_number = models.CharField( verbose_name = '对内编号' , max_length = 255 , null = True , blank = True )
     carbon_source = models.ForeignKey( Carbon , verbose_name = '碳源' , on_delete = models.CASCADE , null = True )
     group = models.CharField( verbose_name = '组别' , max_length = 255 )
     intervention = models.CharField( verbose_name = '干预前后' , max_length = 255 )
     carbon_source_zh = models.CharField( verbose_name = '碳源中文名称' , max_length = 255 , null = True , blank = True )
     # 临床信息
     recordNo = models.CharField( verbose_name = '病历号' , max_length = 255 , blank = True , null = True )
-    name = models.CharField( verbose_name = '姓名' , max_length = 255 , blank = True , null = True)
+    name = models.CharField( verbose_name = '姓名' , max_length = 255 , blank = True , null = True )
     gender = models.IntegerField( verbose_name = '性别' , choices = SEX_CHOICES , null = True , blank = True )
     age = models.IntegerField( verbose_name = '年龄' , blank = True , null = True )
-    age_sgement = models.CharField( verbose_name = '年龄分段' , max_length = 255 , blank = True , null = True)  # 因指标参考范围会因此因素造成影响，必填项，
-    province = models.CharField( verbose_name = '地域' , max_length = 255 , blank = True , null = True)  # 因指标参考范围会因此因素造成影响，必填项，
+    age_sgement = models.CharField( verbose_name = '年龄分段' , max_length = 255 , blank = True ,
+                                    null = True )  # 因指标参考范围会因此因素造成影响，必填项，
+    province = models.CharField( verbose_name = '地域' , max_length = 255 , blank = True ,
+                                 null = True )  # 因指标参考范围会因此因素造成影响，必填项，
     height = models.DecimalField( verbose_name = '身高' , max_digits = 5 , decimal_places = 2 , null = True ,
                                   blank = True )
     weight = models.DecimalField( verbose_name = '体重' , max_digits = 5 , decimal_places = 2 , null = True ,
                                   blank = True )
+    bmi_value = models.DecimalField( verbose_name = 'BMI值' , max_digits = 6 , decimal_places = 2 , null = True ,
+                                     blank = True )
+    bmi_status = models.IntegerField( verbose_name = '肥胖状态' , choices = BMI_CHOICES , null = True , blank = True )
     fbj = models.CharField( verbose_name = '空腹血糖' , max_length = 255 , null = True , blank = True )
     blood_pressure = models.CharField( verbose_name = '血压' , max_length = 255 , null = True , blank = True )
     trioxypurine = models.CharField( verbose_name = '尿酸' , max_length = 255 , null = True , blank = True )

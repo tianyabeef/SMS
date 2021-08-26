@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib import admin
 import re
 from basicdata.models import Carbon , Age , Province
@@ -712,7 +714,9 @@ class ExperimentalDataResource( resources.ModelResource ):
         fields = (
             'id' , 'contract_number' , 'sample_number' , 'internal_number' , 'carbon_source' , 'group' ,
             'intervention' , 'carbon_source_zh' , 'recordNo' , 'name' , 'gender' , 'age' , 'age_sgement' , 'province' ,
-            'height' , 'weight' , 'fbj' , 'blood_pressure' , 'trioxypurine' , 'triglyceride' , 'anamnesis' , 'staging' ,
+            'height' , 'weight' , 'bmi_value' , 'bmi_status' , 'fbj' , 'blood_pressure' , 'trioxypurine' ,
+            'triglyceride' ,
+            'anamnesis' , 'staging' ,
             'therapies' ,
             'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' ,
             'valeric' , 'isovaleric' , 'gas' , 'co2' , 'ch4' , 'h2' , 'h2s' , 'degradation' , 'BIFI' , 'LAC' , 'CS' ,
@@ -720,7 +724,9 @@ class ExperimentalDataResource( resources.ModelResource ):
         export_order = (
             'id' , 'contract_number' , 'sample_number' , 'internal_number' , 'carbon_source' , 'group' ,
             'intervention' , 'carbon_source_zh' , 'recordNo' , 'name' , 'gender' , 'age' , 'age_sgement' , 'province' ,
-            'height' , 'weight' , 'fbj' , 'blood_pressure' , 'trioxypurine' , 'triglyceride' , 'anamnesis' , 'staging' ,
+            'height' , 'weight' , 'bmi_value' , 'bmi_status' , 'fbj' , 'blood_pressure' , 'trioxypurine' ,
+            'triglyceride' ,
+            'anamnesis' , 'staging' ,
             'therapies' ,
             'acetic_acid' , 'propionic' , 'butyric' , 'isobutyric_acid' ,
             'valeric' , 'isovaleric' , 'gas' , 'co2' , 'ch4' , 'h2' , 'h2s' , 'degradation' , 'BIFI' , 'LAC' , 'CS' ,
@@ -740,15 +746,15 @@ class ExperimentalDataResource( resources.ModelResource ):
 
     def get_diff_headers(self):
         return ['id' , '合同号' , '样本编号' , '对内编号' , '碳源' , '组别' , '干预前后' , '碳源中文名称' , '病历号' , '姓名' , '性别' , '年龄' , '年龄分段' ,
-                '地域' , '身高' , '体重' , '空腹血糖' , '血压' , '尿酸' , '血脂' , '确诊疾病' , '疾病分期' , '治疗方法' , '乙酸' , '丙酸' , '丁酸' ,
-                '异丁酸' , '戊酸' ,
+                '地域' , '身高' , '体重' , 'BMI值' , '肥胖状态' , '空腹血糖' , '血压' , '尿酸' , '血脂' , '确诊疾病' , '疾病分期' , '治疗方法' , '乙酸' ,
+                '丙酸' , '丁酸' , '异丁酸' , '戊酸' ,
                 '异戊酸' , '产气量' , 'CO2' , 'CH4' , 'H2' , 'H2S' , '降解率' , '双歧杆菌' , '乳酸菌' , '共生梭菌' , '具核梭杆菌' , '粪肠球菌' ,
                 '多形拟杆菌' , '阿克曼氏菌' , '普拉梭菌']
 
     def get_export_headers(self):
         return ['id' , '合同号' , '样本编号' , '对内编号' , '碳源' , '组别' , '干预前后' , '碳源中文名称' , '病历号' , '姓名' , '性别' , '年龄' , '年龄分段' ,
-                '地域' , '身高' , '体重' , '空腹血糖' , '血压' , '尿酸' , '血脂' , '确诊疾病' , '疾病分期' , '治疗方法' , '乙酸' , '丙酸' , '丁酸' ,
-                '异丁酸' , '戊酸' ,
+                '地域' , '身高' , '体重' , 'BMI值' , '肥胖状态' , '空腹血糖' , '血压' , '尿酸' , '血脂' , '确诊疾病' , '疾病分期' , '治疗方法' , '乙酸' ,
+                '丙酸' , '丁酸' , '异丁酸' , '戊酸' ,
                 '异戊酸' , '产气量' , 'CO2' , 'CH4' , 'H2' , 'H2S' , '降解率' , '双歧杆菌' , '乳酸菌' , '共生梭菌' , '具核梭杆菌' , '粪肠球菌' ,
                 '多形拟杆菌' , '阿克曼氏菌' , '普拉梭菌']
 
@@ -792,8 +798,43 @@ class ExperimentalDataResource( resources.ModelResource ):
         row ['age'] = row ['年龄']
         row ['age_sgement'] = row ['年龄分段']
         row ['province'] = row ['地域']
-        row ['height'] = row ['身高']
+        if row ['身高'] is "":
+            row ['身高'] = None
+        if row ['体重'] is "":
+            row ['体重'] = None
+        if row ['身高'] is not None:
+            if float( row ['身高'] ) > 0 and float( row ['身高'] ) < 9:
+                row ['height'] = float( row ['身高'] )
+            else:
+                row ['height'] = float( row ['身高'] ) / 100  # 体重单位转换为mi
+        else:
+            row ['height'] = row ['身高']
         row ['weight'] = row ['体重']
+        if (row ['height'] is not None) and (row ['weight'] is not None):
+            if (float( row ['height'] ) > 0) and (float( row ['weight'] ) > 0):
+                row ['bmi_value'] = Decimal(
+                    float( row ['weight'] ) / pow( float( row ['height'] ) , 2 ) )  # BMI值由系统自动计算
+        else:
+            row ['bmi_value'] = None
+
+        if row ['身高'] is not None:
+            if float( row ['身高'] ) > 0:
+                row ['height'] = float( row ['身高'] ) / 100  # 体重单位转换为mi
+        else:
+            row ['height'] = row ['身高']
+
+        '''start 根据bmi判断状态'''
+        if row ['bmi_value'] is not None:
+            if row ['bmi_value'] < 18.5:
+                row ['bmi_status'] = 0
+            elif row ['bmi_value'] > 28:
+                row ['bmi_status'] = 2
+            else:
+                row ['bmi_status'] = 1
+        else:
+            row ['bmi_status'] = None
+            '''end 根据bmi判断状态'''
+
         row ['fbj'] = row ['空腹血糖']
         row ['blood_pressure'] = row ['血压']
         row ['trioxypurine'] = row ['尿酸']
@@ -957,13 +998,14 @@ class ExperimentalDataAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
     list_max_show_all = 100
     list_per_page = 20
     list_filter = (
-    'is_status' , 'carbon_source' , 'gender' , ContractListFilter , AnamnesisListFilter , ProvinceListFilter ,
-    AgeListFilter)
-    search_fields = ('note' ,'age')
+        AgeListFilter , 'gender' , 'bmi_status' , ContractListFilter , AnamnesisListFilter , ProvinceListFilter ,
+    )
+    search_fields = ('staging' , 'therapies' , 'note')
     import_export_args = {'import_resource_class': ExperimentalDataResource ,
                           'export_resource_class': ExperimentalDataResource}
     resource_class = ExperimentalDataResource
     form = ContractForm
+    readonly_fields = ('bmi_status' , 'bmi_value')
     # list_editable =
     actions = ['make_finish' , 'export_admin_action']
     exclude = (
@@ -1031,7 +1073,24 @@ class ExperimentalDataAdmin( ImportExportActionModelAdmin , admin.ModelAdmin ):
 
         if obj.isovaleric is not None:
             obj.isovaleric_ratio = obj.isovaleric / obj.total_acid
-
+        if obj.height is "":
+            obj.height = None
+        if obj.weight is "":
+            obj.weight = None
+        if (obj.height is not None) and (obj.weight is not None):
+            if (obj.height > 0) and (obj.weight > 0):
+                obj.bmi_value = float( obj.weight ) / (float( obj.height ) * float( obj.height ))
+        '''start 根据bmi判断状态'''
+        if obj.bmi_value is not None:
+            if obj.bmi_value < 18.5:
+                obj.bmi_status = 0
+            elif obj.bmi_value > 28:
+                obj.bmi_status = 2
+            else:
+                obj.bmi_status = 1
+        else:
+            obj.bmi_status = None
+            '''end 根据bmi判断状态'''
         obj.save( )
 
     def make_finish(self , request , queryset):
